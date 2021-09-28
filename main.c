@@ -472,15 +472,15 @@ int main() {
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
-
+                    char* frame_type = get_frame_type(packet);
                     char* ethertype_buff = get_ether_type(packet, ethertypes);
 
                     char* eighthundredtwo_three_buff;
                     eighthundredtwo_three_buff = get_802_3_value(packet, eighthundredtwo_three);
 
-                    char* frame_type = get_frame_type(packet);
-
                     char* protocol_buff;
+
+                    // Je ARP
                     if (strcmp(ethertype_buff, "ARP") == 0)
                     {
 
@@ -517,8 +517,11 @@ int main() {
                         fprintf(output, "%s\n", protocol_buff);
 
                     }
+
+                    // Je IP
                     else
                         protocol_buff = get_protocol(packet, ip_protocols);
+
 
                     print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
                     printf("\n%s", get_frame_type(packet));
@@ -715,8 +718,8 @@ int main() {
                 break;
             }
 
-                // Doimplementacia
-                // vystupny subor je pod priecinkom txt pod menom output.txt
+            // Doimplementacia
+            // vystupny subor je pod priecinkom txt pod menom output.txt
             case 3:
             {
                 char choice2[20];
@@ -754,13 +757,12 @@ int main() {
                         }
                     }
                 }
-                printf("Tento subor ubsahoval %d protokolov typu %s.\n", count, choice2);
-                fprintf(output, "Tento subor ubsahoval %d protokolov typu %s.\n", count, choice2);
+                printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                fprintf(output, "Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
                 pcap_close(pcap_file);
                 frames = 0;
                 break;
             }
-
 
             default:
                 break;
