@@ -1,0 +1,17 @@
+# 0	Echo Reply
+# 3	Destination Unrechable
+# 4	Source Quench
+# 5	Redirect
+# 8	Echo
+# 9	Router Advertisment
+# a	Router Selection
+# b	Time Exceeded
+# c	Parameter Problem
+# d	Timestamp
+# e	Timestamp Reply
+# f	Information Request
+# 10	Information Reply
+# 11	Address Mask Request
+# 12	Address Mask Reply
+# 1E	Traceroute
+-

@@ -1,0 +1,9 @@
+/snap/clion/164/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/zsolti/CLionProjects/PKS_Z1
+-- Found PCAP: /usr/lib/x86_64-linux-gnu/libpcap.so  
+-- Performing Test PCAP_LINKS_SOLO
+-- Performing Test PCAP_LINKS_SOLO - Success
+-- Looking for pcap_get_pfring_id
+-- Looking for pcap_get_pfring_id - not found
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/zsolti/CLionProjects/PKS_Z1/cmake-build-debug

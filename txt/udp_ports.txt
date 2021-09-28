@@ -1,0 +1,16 @@
+# 7	Echo
+# 13	Chargen
+# 25	Time
+# 35	Domain
+# 43	Bootps DHCP
+# 44	Bootpc DHCP
+# 45	TFTP
+# 89	Netbios ns
+# 8A	Netbios dgm
+# A1	SNMP
+# A2	SNMP trap
+# 1F4	Isakmp
+# 202	syslog
+# 208	RIP
+# 829A	Traceroute
+-

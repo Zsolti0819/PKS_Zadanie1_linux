@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/PKS_Z1.dir/main.c.o -o PKS_Z1  /usr/lib/x86_64-linux-gnu/libpcap.so 
