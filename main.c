@@ -8,18 +8,16 @@ struct IP_header
 {
     char* dst_ip_addr;
     int rx_packets;
-    bool* tcp;
     struct IP_header* next;
 };
 
 // pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
-void insert_node_to_linked_list(struct IP_header** head_ref, char* ip_address, bool tcp)
+void insert_node_to_linked_list(struct IP_header **head_ref, char *ip_address)
 {
     struct IP_header* new_node = malloc(sizeof(struct IP_header));
     struct IP_header* last = *head_ref;
     new_node->dst_ip_addr = ip_address;
     new_node->rx_packets = 1;
-    //new_node->tcp = tcp;
     new_node->next = NULL;
 
     if (*head_ref == NULL)
@@ -32,7 +30,6 @@ void insert_node_to_linked_list(struct IP_header** head_ref, char* ip_address, b
         last = last->next;
 
     last->next = new_node;
-    return;
 }
 
 // vypis spajaneho zoznamu
@@ -40,12 +37,9 @@ void print_linked_list(struct IP_header* node, FILE* output)
 {
     while (node != NULL)
     {
-        //if (node->tcp) // chceme aby to bolo TCP
-        //{
         printf("%s\n", node->dst_ip_addr);
         fprintf(output, "%s\n", node->dst_ip_addr);
-        // printf("Packets: %d\n\n", node->rx_packets); // v pripade ak by sme chceli packety IPv4/TCP
-        //}
+
         node = node->next;
     }
 }
@@ -66,8 +60,12 @@ void print_ip_with_the_most_packets(struct IP_header* start, FILE* output)
 
         temp = temp->next;
     }
-    printf("Adresa uzla s najvacsim poctom prijatych paketov:\n%s\t%d paketov\n", temp2->dst_ip_addr, temp2->rx_packets);
-    fprintf(output, "Adresa uzla s najvacsim poctom prijatych paketov:\n%s\t%d paketov\n", temp2->dst_ip_addr, temp2->rx_packets);
+    if (temp2 != NULL)
+    {
+        printf("Adresa uzla s najvacsim poctom prijatych paketov:\n%s\t%d paketov\n", temp2->dst_ip_addr, temp2->rx_packets);
+        fprintf(output, "Adresa uzla s najvacsim poctom prijatych paketov:\n%s\t%d paketov\n", temp2->dst_ip_addr, temp2->rx_packets);
+    }
+
 }
 
 // vymazanie vsetkych uzlov
@@ -242,7 +240,7 @@ char* get_ether_type(const u_char* packet, FILE* ethertypes)
     }
     char* ethertype;
     ethertype = malloc(sizeof(u_char) * i);
-    sprintf(ethertype, ethertype_buff);
+    sprintf(ethertype, "%s", ethertype_buff);
     return ethertype;
 }
 
@@ -268,7 +266,7 @@ char* get_protocol(const u_char* packet, FILE* ip_protocols)
     }
     char* protocol;
     protocol = malloc(sizeof(u_char) * i);
-    sprintf(protocol, protocol_buff);
+    sprintf(protocol, "%s", protocol_buff);
     return protocol;
 }
 
@@ -295,7 +293,7 @@ char* get_tcp_or_udp_port(const u_char* packet, FILE* file_w_ports) {
     }
     char* tcp_port;
     tcp_port = malloc(sizeof(u_char) * i);
-    sprintf(tcp_port, tcp_port_buff);
+    sprintf(tcp_port, "%s", tcp_port_buff);
 
     return tcp_port;
 }
@@ -306,7 +304,6 @@ char* get_icmp_port(const u_char* packet, FILE* icmp_ports)
 
     int real_value = packet[34];
 
-    int pom = 0;
     rewind(icmp_ports);
     char c;
     char icmp_port_buff[50] = { 0 };
@@ -316,7 +313,6 @@ char* get_icmp_port(const u_char* packet, FILE* icmp_ports)
         if (c == '#') {
             fscanf(icmp_ports, "%x", &value_in_the_file);
             if (real_value == value_in_the_file) {
-                pom = value_in_the_file;
                 while ((c = getc(icmp_ports)) != '\n')
                     if (c != '\t')
                         icmp_port_buff[i++] = c;
@@ -326,7 +322,7 @@ char* get_icmp_port(const u_char* packet, FILE* icmp_ports)
     }
     char* icmp_port;
     icmp_port = malloc(sizeof(u_char) * i);
-    sprintf(icmp_port, icmp_port_buff);
+    sprintf(icmp_port, "%s", icmp_port_buff);
 
     return icmp_port;
 }
@@ -336,7 +332,6 @@ char* get_arp_value(const u_char* packet, FILE* arp_file)
     int value_in_the_file = 0;
 
     int real_value = packet[20] * 256 + packet[21];
-    int pom = 0;
     rewind(arp_file);
     char c;
     char arp_buff[50] = { 0 };
@@ -346,7 +341,6 @@ char* get_arp_value(const u_char* packet, FILE* arp_file)
         if (c == '#') {
             fscanf(arp_file, "%x", &value_in_the_file);
             if (real_value == value_in_the_file) {
-                pom = value_in_the_file;
                 while ((c = getc(arp_file)) != '\n')
                     if (c != '\t')
                         arp_buff[i++] = c;
@@ -356,7 +350,7 @@ char* get_arp_value(const u_char* packet, FILE* arp_file)
     }
     char* arp_value;
     arp_value = malloc(sizeof(u_char) * i);
-    sprintf(arp_value, arp_buff);
+    sprintf(arp_value, "%s", arp_buff);
 
     return arp_value;
 
@@ -368,7 +362,6 @@ char* get_802_3_value(const u_char* packet, FILE* eighthundredtwo_three_file)
 
     int real_value1 = packet[14];
     int real_value2 = packet[15];
-    int pom = 0;
     rewind(eighthundredtwo_three_file);
     char c;
     char eighthundredtwo_three_buff[50] = { 0 };
@@ -378,7 +371,6 @@ char* get_802_3_value(const u_char* packet, FILE* eighthundredtwo_three_file)
         if (c == '#') {
             fscanf(eighthundredtwo_three_file, "%x", &value_in_the_file);
             if (real_value1 == value_in_the_file && real_value2 == value_in_the_file) {
-                pom = value_in_the_file;
                 while ((c = getc(eighthundredtwo_three_file)) != '\n')
                     if (c != '\t')
                         eighthundredtwo_three_buff[i++] = c;
@@ -388,7 +380,7 @@ char* get_802_3_value(const u_char* packet, FILE* eighthundredtwo_three_file)
     }
     char* eighthundredtwo_three_value;
     eighthundredtwo_three_value = malloc(sizeof(u_char) * i);
-    sprintf(eighthundredtwo_three_value, eighthundredtwo_three_buff);
+    sprintf(eighthundredtwo_three_value, "%s", eighthundredtwo_three_buff);
 
     return eighthundredtwo_three_value;
 }
@@ -397,15 +389,12 @@ char* get_802_3_value(const u_char* packet, FILE* eighthundredtwo_three_file)
 char* get_sap(const u_char* packet, FILE* sap_file)
 {
     int value_in_the_file = 0;
-
     int real_value1 = packet[14];
     int real_value2 = packet[15];
-
     rewind(sap_file);
     char c;
     char eighthundredtwo_three_buff[50] = { 0 };
     int i = 0;
-
     while ((c = getc(sap_file)) != '-') {
         if (c == '#') {
             fscanf(sap_file, "%x", &value_in_the_file);
@@ -416,7 +405,6 @@ char* get_sap(const u_char* packet, FILE* sap_file)
                         eighthundredtwo_three_buff[i++] = c;
                         printf("%c", c);
                     }
-
                 break;
             }
         }
@@ -424,15 +412,13 @@ char* get_sap(const u_char* packet, FILE* sap_file)
     char* eighthundredtwo_three_value;
     eighthundredtwo_three_value = malloc(sizeof(u_char) * i);
     sprintf(eighthundredtwo_three_value, eighthundredtwo_three_buff);
-
     return eighthundredtwo_three_value;
 }
 */
 
-
 int main() {
     char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozte subor
-    char chyba_pcap_suboru[PCAP_ERRBUF_SIZE];
+    char pcap_file_error[PCAP_ERRBUF_SIZE];
     struct pcap_pkthdr* pcap_header;
     const u_char* packet;
     pcap_t* pcap_file;
@@ -478,7 +464,7 @@ int main() {
         {
             case 1:
             {
-                if ((pcap_file = pcap_open_offline(file_name, chyba_pcap_suboru)) == NULL)
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL)
                 {
                     printf("Subor sa neda otvorit!");
                     fprintf(output, "Subor sa neda otvorit!");
@@ -567,7 +553,7 @@ int main() {
                     {
                         printf("%s\n", ethertype_buff);
                         fprintf(output, "%s\n", ethertype_buff);
-                        if (strcmp(ethertype_buff, "ARP"))
+                        if (strcmp(ethertype_buff, "ARP") != 0)
                             print_IP_adress(packet, output);
                         printf("%s\n", protocol_buff);
                         fprintf(output, "%s\n", protocol_buff);
@@ -578,12 +564,12 @@ int main() {
                         if ((strcmp(ethertype_buff, "IPv4") == 0) && search_in_linked_list(head, dst_ip_buff) == false)
                         {
                             if (strcmp(protocol_buff, "TCP") == 0)
-                                insert_node_to_linked_list(&head, get_dst_ip(packet), true);
+                                insert_node_to_linked_list(&head, get_dst_ip(packet));
                             else
-                                insert_node_to_linked_list(&head, get_dst_ip(packet), false);
+                                insert_node_to_linked_list(&head, get_dst_ip(packet));
                         }
 
-                        char* port_buff = { 0 };
+                        char* port_buff;
                         if (strcmp(protocol_buff, "TCP") == 0)
                         {
                             port_buff = get_tcp_or_udp_port(packet, tcp_ports);
@@ -635,19 +621,19 @@ int main() {
                     for (j = 0; j < 4; j++)
                         for (k = 0; k < 7; k++)
                             for (l = 0; l < 10; l++)
-                                strcpy(&categories[i][j][k][l], "-");
-                strcpy(&categories[1][0][0][0], "IPv4");
-                strcpy(&categories[1][1][0][0], "TCP");
-                strcpy(&categories[1][1][1][0], "FTP DATA");
-                strcpy(&categories[1][1][2][0], "FTP CONTROL");
-                strcpy(&categories[1][1][3][0], "SSH");
-                strcpy(&categories[1][1][4][0], "TELNET");
-                strcpy(&categories[1][1][5][0], "HTTP");
-                strcpy(&categories[1][1][6][0], "HTTPS");
-                strcpy(&categories[1][2][0][0], "UDP");
-                strcpy(&categories[1][2][1][0], "TFTP");
-                strcpy(&categories[1][3][0][0], "ICMP");
-                strcpy(&categories[2][0][0][0], "ARP");
+                                strcpy((char *) &categories[i][j][k][l], "-");
+                strcpy((char *) &categories[1][0][0][0], "IPv4");
+                strcpy((char *) &categories[1][1][0][0], "TCP");
+                strcpy((char *) &categories[1][1][1][0], "FTP DATA");
+                strcpy((char *) &categories[1][1][2][0], "FTP CONTROL");
+                strcpy((char *) &categories[1][1][3][0], "SSH");
+                strcpy((char *) &categories[1][1][4][0], "TELNET");
+                strcpy((char *) &categories[1][1][5][0], "HTTP");
+                strcpy((char *) &categories[1][1][6][0], "HTTPS");
+                strcpy((char *) &categories[1][2][0][0], "UDP");
+                strcpy((char *) &categories[1][2][1][0], "TFTP");
+                strcpy((char *) &categories[1][3][0][0], "ICMP");
+                strcpy((char *) &categories[2][0][0][0], "ARP");
                 char choice2[20];
                 fgets(choice2, 20, stdin);
                 choice2[strlen(choice2) - 1] = '\0'; // odsranim enter kvoli fgets
@@ -659,14 +645,14 @@ int main() {
                 for (i = 1; i < 3; i++)
                     for (j = 0; j < 4; j++)
                         for (k = 0; k < 7; k++)
-                            if (strcmp(choice2, &categories[i][j][k][0]) == 0)
+                            if (strcmp(choice2, (const char *) &categories[i][j][k][0]) == 0)
                             {
                                 op_ethertype = i;
                                 op_protocol = j;
                                 op_port = k;
                             }
                 // printf("%d %d %d\n", op_ethertype, op_protocol, op_port);
-                if ((pcap_file = pcap_open_offline(file_name, chyba_pcap_suboru)) == NULL)
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL)
                 {
                     printf("Subor sa neda otvorit!");
                     fprintf(output, "Subor sa neda otvorit!");
@@ -698,7 +684,7 @@ int main() {
                         printf("&categories[op_ethertype][op_protocol][op_port]: %s\n", &categories[op_ethertype][op_protocol][op_port]);
                         */
                         // ked nasiel hladany protokol
-                        if (strcmp(port_buff, &categories[op_ethertype][op_protocol][op_port]) == 0 || strcmp(protocol_buff, "ICMP") == 0 && strcmp(choice2, protocol_buff) == 0)
+                        if (strcmp(port_buff, (const char *) &categories[op_ethertype][op_protocol][op_port]) == 0 || strcmp(protocol_buff, "ICMP") == 0 && strcmp(choice2, protocol_buff) == 0)
                         {
                             print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
                             printf("\n%s", get_frame_type(packet));
@@ -726,7 +712,6 @@ int main() {
                 op_ethertype = 0;
                 op_protocol = 0;
                 op_port = 0;
-                count = 0;
                 break;
             }
 
@@ -738,7 +723,7 @@ int main() {
                 strcpy(choice2, "STP");
                 int count = 0;
 
-                if ((pcap_file = pcap_open_offline(file_name, chyba_pcap_suboru)) == NULL)
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL)
                 {
                     printf("Subor sa neda otvorit!");
                     fprintf(output, "Subor sa neda otvorit!");
@@ -773,7 +758,6 @@ int main() {
                 fprintf(output, "Tento subor ubsahoval %d protokolov typu %s.\n", count, choice2);
                 pcap_close(pcap_file);
                 frames = 0;
-                count = 0;
                 break;
             }
 
@@ -786,5 +770,3 @@ int main() {
 
     return 0;
 }
-
-
