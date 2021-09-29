@@ -407,11 +407,7 @@ int main() {
     open_txt_files(&_802_3, &ethertypes, &ip_protocols, &tcp_ports, &udp_ports, &icmp_ports, &arp_operation, &sap_file,
                    &output);
 
-    if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-        printf("Subor sa neda otvorit!");
-        fprintf(output, "Subor sa neda otvorit!");
-        exit(0);
-    }
+
 
     struct pcap_pkthdr* pcap_header;
     const u_char* packet;
@@ -425,6 +421,13 @@ int main() {
         seek_to_next_line();
         switch (choice) {
             case 1: {
+
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Subor sa neda otvorit!");
+                    fprintf(output, "Subor sa neda otvorit!");
+                    exit(0);
+                }
+
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
                     char* frame_type = get_frame_type(packet);
@@ -582,6 +585,13 @@ int main() {
             }
 
             case 2: {
+
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Subor sa neda otvorit!");
+                    fprintf(output, "Subor sa neda otvorit!");
+                    exit(0);
+                }
+
                 printf("Zadajte protokol. Moznosti su:\n\nHTTP\nHTTPS\nTELNET\nFTP CONTROL\nICMP\n");
                 printf("\n=======================================================================\n");
                 int i, j, k, l;
