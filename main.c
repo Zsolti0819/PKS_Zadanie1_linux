@@ -6,18 +6,18 @@
 
 struct IP_header
 {
-    char* dst_ip_addr;
-    int rx_packets;
+    char* src_ip_addr;
+    int tx_packets;
     struct IP_header* next;
 };
 
 // pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
-void insert_node_to_linked_list(struct IP_header **head_ref, char *ip_address)
+void insert_src_ip_to_ll(struct IP_header **head_ref, char *ip_address)
 {
     struct IP_header* new_node = malloc(sizeof(struct IP_header));
     struct IP_header* last = *head_ref;
-    new_node->dst_ip_addr = ip_address;
-    new_node->rx_packets = 1;
+    new_node->src_ip_addr = ip_address;
+    new_node->tx_packets = 1;
     new_node->next = NULL;
 
     if (*head_ref == NULL)
@@ -33,18 +33,18 @@ void insert_node_to_linked_list(struct IP_header **head_ref, char *ip_address)
 }
 
 // vypis spajaneho zoznamu
-void print_linked_list(struct IP_header* node, FILE* output)
+void print_ll(struct IP_header* node, FILE* output)
 {
     while (node != NULL)
     {
-        printf("%s\n", node->dst_ip_addr);
-        fprintf(output, "%s\n", node->dst_ip_addr);
+        printf("%s\n", node->src_ip_addr);
+        fprintf(output, "%s\n", node->src_ip_addr);
 
         node = node->next;
     }
 }
 
-void print_ip_with_the_most_packets(struct IP_header* start, FILE* output)
+void print_ip_with_the_most_packets_sent(struct IP_header* start, FILE* output)
 {
     struct IP_header* temp = start;
     struct IP_header* temp2 = NULL;
@@ -52,24 +52,24 @@ void print_ip_with_the_most_packets(struct IP_header* start, FILE* output)
     int max = 0;
     while (temp != NULL)
     {
-        if (temp->rx_packets > max)
+        if (temp->tx_packets > max)
         {
             temp2 = temp;
-            max = temp->rx_packets;
+            max = temp->tx_packets;
         }
 
         temp = temp->next;
     }
     if (temp2 != NULL)
     {
-        printf("Adresa uzla s najvacsim poctom prijatych paketov:\n%s\t%d paketov\n", temp2->dst_ip_addr, temp2->rx_packets);
-        fprintf(output, "Adresa uzla s najvacsim poctom prijatych paketov:\n%s\t%d paketov\n", temp2->dst_ip_addr, temp2->rx_packets);
+        printf("Adresa uzla s najvacsim poctom odoslanych paketov:\n%s\t%d paketov\n", temp2->src_ip_addr, temp2->tx_packets);
+        fprintf(output, "Adresa uzla s najvacsim poctom odoslanych paketov:\n%s\t%d paketov\n", temp2->src_ip_addr, temp2->tx_packets);
     }
 
 }
 
 // vymazanie vsetkych uzlov
-void delete_linked_list(struct IP_header** head_ref)
+void delete_ll(struct IP_header** head_ref)
 {
     struct IP_header* temp = *head_ref;
     struct IP_header* next;
@@ -85,14 +85,14 @@ void delete_linked_list(struct IP_header** head_ref)
 }
 
 // hladanie v spajanom zozname
-bool search_in_linked_list(struct IP_header* head, char* data)
+bool search_in_ll(struct IP_header* head, char* data)
 {
     struct IP_header* temp = head;
     while (temp != NULL)
     {
-        if (strcmp(temp->dst_ip_addr, data) == 0)
+        if (strcmp(temp->src_ip_addr, data) == 0)
         {
-            temp->rx_packets++;
+            temp->tx_packets++;
             return true;
         }
 
@@ -110,7 +110,6 @@ void print_menu()
     printf("1 - Vypis vsetkych komunikacii\n");
     printf("2 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
     printf("3 - Doimplementacia\n");
-    printf("Zadajte prosim cislo: ");
     printf("\n=======================================================================\n");
 }
 
@@ -189,8 +188,8 @@ void print_hexadecimal(int i, const u_char* packet, FILE* output) {
 // vypis zdrojoveho a cieloveho portu
 void print_src_port_and_dst_port(const u_char* packet, FILE* output)
 {
-    printf("zdrojovy port: %d\ncielovy port: %d", packet[34] * 256 + packet[35], packet[36] * 256 + packet[37]);
-    fprintf(output, "zdrojovy port: %d\ncielovy port: %d", packet[34] * 256 + packet[35], packet[36] * 256 + packet[37]);
+    printf("zdrojovy port: %d\ncielovy port: %d\n", packet[34] * 256 + packet[35], packet[36] * 256 + packet[37]);
+    fprintf(output, "zdrojovy port: %d\ncielovy port: %d\n", packet[34] * 256 + packet[35], packet[36] * 256 + packet[37]);
 }
 
 // funckia vrati zdrojovu IP adresu vo formate char *
@@ -199,14 +198,6 @@ char* get_src_ip(const u_char* packet) {
     src_ip_addr = malloc(sizeof(u_char) * 20);
     sprintf(src_ip_addr, "%d.%d.%d.%d", packet[26], packet[27], packet[28], packet[29]);
     return src_ip_addr;
-}
-
-// funckia vrati cielovu IP adresu vo formate char *
-char* get_dst_ip(const u_char* packet) {
-    char* dst_ip_addr;
-    dst_ip_addr = malloc(sizeof(u_char) * 20);
-    sprintf(dst_ip_addr, "%d.%d.%d.%d", packet[30], packet[31], packet[32], packet[33]);
-    return dst_ip_addr;
 }
 
 // funkcia vrati retazec s obsahom typom je ramca
@@ -356,22 +347,22 @@ char* get_arp_value(const u_char* packet, FILE* arp_file)
 
 }
 
-char* get_802_3_value(const u_char* packet, FILE* eighthundredtwo_three_file)
+char* get_802_3_value(const u_char* packet, FILE* _802_03_file)
 {
     int value_in_the_file = 0;
 
     int real_value1 = packet[14];
     int real_value2 = packet[15];
-    rewind(eighthundredtwo_three_file);
+    rewind(_802_03_file);
     char c;
     char eighthundredtwo_three_buff[50] = { 0 };
     int i = 0;
 
-    while ((c = getc(eighthundredtwo_three_file)) != '-') {
+    while ((c = getc(_802_03_file)) != '-') {
         if (c == '#') {
-            fscanf(eighthundredtwo_three_file, "%x", &value_in_the_file);
+            fscanf(_802_03_file, "%x", &value_in_the_file);
             if (real_value1 == value_in_the_file && real_value2 == value_in_the_file) {
-                while ((c = getc(eighthundredtwo_three_file)) != '\n')
+                while ((c = getc(_802_03_file)) != '\n')
                     if (c != '\t')
                         eighthundredtwo_three_buff[i++] = c;
                 break;
@@ -385,237 +376,208 @@ char* get_802_3_value(const u_char* packet, FILE* eighthundredtwo_three_file)
     return eighthundredtwo_three_value;
 }
 
-/*
-char* get_sap(const u_char* packet, FILE* sap_file)
-{
-    int value_in_the_file = 0;
-    int real_value1 = packet[14];
-    int real_value2 = packet[15];
-    rewind(sap_file);
-    char c;
-    char eighthundredtwo_three_buff[50] = { 0 };
-    int i = 0;
-    while ((c = getc(sap_file)) != '-') {
-        if (c == '#') {
-            fscanf(sap_file, "%x", &value_in_the_file);
-            if (real_value1 == value_in_the_file || real_value2 == value_in_the_file) {
-                while ((c = getc(sap_file)) != '\n')
-                    if (c != '\t')
-                    {
-                        eighthundredtwo_three_buff[i++] = c;
-                        printf("%c", c);
-                    }
-                break;
-            }
-        }
-    }
-    char* eighthundredtwo_three_value;
-    eighthundredtwo_three_value = malloc(sizeof(u_char) * i);
-    sprintf(eighthundredtwo_three_value, eighthundredtwo_three_buff);
-    return eighthundredtwo_three_value;
+void open_txt_files(FILE **_802_3, FILE **ethertypes, FILE **ip_protocols, FILE **tcp_ports, FILE **udp_ports,
+                    FILE **icmp_ports, FILE **arp_operation, FILE **sap_file, FILE **output) {
+    if (((*_802_3) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/802_3.txt", "r")) == NULL) printf("Neotvoreny subor \"802_3.txt\"\n");
+    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/ethertypes.txt", "r")) == NULL) printf("Neotvoreny subor \"ethertypes.txt\"\n");
+    if (((*ip_protocols) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/ip_protocols.txt", "r")) == NULL) printf("Neotvoreny subor \"ip_protocols.txt\"\n");
+    if (((*tcp_ports) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/tcp_ports.txt", "r")) == NULL) printf("Neotvoreny subor \"tcp_ports.txt\"\n");
+    if (((*udp_ports) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/udp_ports.txt", "r")) == NULL) printf("Neotvoreny subor \"udp_ports.txt\"\n");
+    if (((*icmp_ports) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/icmp_ports.txt", "r")) == NULL) printf("Neotvoreny subor \"icmp_ports.txt\"\n");
+    if (((*arp_operation) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/arp_values.txt", "r")) == NULL) printf("Neotvoreny subor \"arp_values.txt\"\n");
+    if (((*sap_file) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/sap_file.txt", "r")) == NULL) printf("Neotvoreny subor \"sap_file.txt\"\n");
+    (*output) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/output.txt", "w");
 }
-*/
 
 int main() {
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozte subor
+
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/eth-9.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
-    struct pcap_pkthdr* pcap_header;
-    const u_char* packet;
     pcap_t* pcap_file;
 
-    FILE* ethertypes;
-    if ((ethertypes = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/ethertypes.txt", "r")) == NULL) printf("Neotvoreny subor \"ethertypes.txt\"\n");
+    FILE *_802_3;
+    FILE *ethertypes;
+    FILE *ip_protocols;
+    FILE *tcp_ports;
+    FILE *udp_ports;
+    FILE *icmp_ports;
+    FILE *arp_operation;
+    FILE *sap_file;
+    FILE *output;
+    open_txt_files(&_802_3, &ethertypes, &ip_protocols, &tcp_ports, &udp_ports, &icmp_ports, &arp_operation, &sap_file,
+                   &output);
 
-    FILE* ip_protocols;
-    if ((ip_protocols = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/ip_protocols.txt", "r")) == NULL) printf("Neotvoreny subor \"ip_protocols.txt\"\n");
+    if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+        printf("Subor sa neda otvorit!");
+        fprintf(output, "Subor sa neda otvorit!");
+        exit(0);
+    }
 
-    FILE* tcp_ports;
-    if ((tcp_ports = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/tcp_ports.txt", "r")) == NULL) printf("Neotvoreny subor \"tcp_ports.txt\"\n");
-
-    FILE* udp_ports;
-    if ((udp_ports = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/udp_ports.txt", "r")) == NULL) printf("Neotvoreny subor \"udp_ports.txt\"\n");
-
-    FILE* icmp_ports;
-    if ((icmp_ports = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/icmp_ports.txt", "r")) == NULL) printf("Neotvoreny subor \"icmp_ports.txt\"\n");
-
-    FILE* arp_operation;
-    if ((arp_operation = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/arp_values.txt", "r")) == NULL) printf("Neotvoreny subor \"arp_values.txt\"\n");
-
-    FILE* eighthundredtwo_three;
-    if ((eighthundredtwo_three = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/802_3.txt", "r")) == NULL) printf("Neotvoreny subor \"802_3.txt\"\n");
-
-    FILE* sap_file;
-    if ((sap_file = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/sap_file.txt", "r")) == NULL) printf("Neotvoreny subor \"sap_file.txt\"\n");
-
-    FILE* output;
-    output = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/output.txt", "w");
-
+    struct pcap_pkthdr* pcap_header;
+    const u_char* packet;
     struct IP_header* head = NULL;
-
-    u_int frames = 0;
+    int frames = 0;
     int choice;
 
-    do
-    {
+    do {
         print_menu();
         scanf("%d", &choice);
         seek_to_next_line();
-        switch (choice)
-        {
-            case 1:
-            {
-                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL)
-                {
-                    printf("Subor sa neda otvorit!");
-                    fprintf(output, "Subor sa neda otvorit!");
-                }
-
+        switch (choice) {
+            case 1: {
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
                     char* frame_type = get_frame_type(packet);
                     char* ethertype_buff = get_ether_type(packet, ethertypes);
-
-                    char* eighthundredtwo_three_buff;
-                    eighthundredtwo_three_buff = get_802_3_value(packet, eighthundredtwo_three);
-
                     char* protocol_buff;
+                    char* _802_3_buff = get_802_3_value(packet, _802_3);
 
-                    // Je ARP
-                    if (strcmp(ethertype_buff, "ARP") == 0)
-                    {
+                    // Je 802.3
+                    if (strcmp(frame_type, "Ethernet II")) {
 
-                        protocol_buff = get_protocol(packet, arp_operation);
-                        char* arp_buff = get_arp_value(packet, arp_operation);
-                        char arp_dst_ip[20];
-                        char arp_src_ip[20];
+                        // ramec cislo x, dlzky ramca
+                        print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
 
-                        char arp_src_mac[50];
-                        char arp_dst_mac[50];
+                        // 802.3
+                        printf("\n%s", frame_type);
+                        fprintf(output, "\n%s", frame_type);
 
-                        sprintf(arp_dst_ip, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
-                        sprintf(arp_src_ip, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
-                        sprintf(arp_dst_mac, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
-                        sprintf(arp_src_mac, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
+                        if (strcmp(_802_3_buff, "SNAP") == 0 || strcmp(_802_3_buff, "Global DSAP") == 0) {
 
-                        if (strcmp(arp_buff, "Request") == 0)
-                        {
-                            printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_dst_ip, arp_dst_mac);
-                            fprintf(output, "%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_dst_ip, arp_dst_mac);
-                            printf("Zdrojova IP: %s, Cielova IP: %s\n", arp_src_ip, arp_dst_ip);
-                            fprintf(output, "Zdrojova IP: %s, Cielova IP: %s\n", arp_src_ip, arp_dst_ip);
-
-                        }
-                        else // Reply
-                        {
-                            printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_src_ip, arp_src_mac);
-                            fprintf(output, "%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_src_ip, arp_src_mac);
-                            printf("Zdrojova IP: %s, Cielova IP: %s\n", arp_src_ip, arp_dst_ip);
-                            fprintf(output, "Zdrojova IP: %s, Cielova IP: %s\n", arp_src_ip, arp_dst_ip);
-                        }
-
-                        printf("%s\n", protocol_buff);
-                        fprintf(output, "%s\n", protocol_buff);
-
-                    }
-
-                    // Je IP
-                    else
-                        protocol_buff = get_protocol(packet, ip_protocols);
-
-
-                    print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
-                    printf("\n%s", get_frame_type(packet));
-                    fprintf(output, "\n%s", get_frame_type(packet));
-
-
-
-                    if (strcmp(frame_type, "Ethernet II"))
-                    {
-                        if (strcmp(eighthundredtwo_three_buff, "SNAP") == 0 || strcmp(eighthundredtwo_three_buff, "Global DSAP") == 0)
-                        {
-
-                            if (strcmp(eighthundredtwo_three_buff, "SNAP") == 0)
-                            {
-                                printf(" LLC + %s\n", eighthundredtwo_three_buff);
-                                fprintf(output, " LLC + %s\n", eighthundredtwo_three_buff);
+                            // 802.3 SNAP + LLC
+                            if (strcmp(_802_3_buff, "SNAP") == 0) {
+                                printf(" LLC + %s", _802_3_buff);
+                                fprintf(output, " LLC + %s", _802_3_buff);
                             }
 
-                            else
-                            {
-                                printf("%s\n", eighthundredtwo_three_buff);
-                                fprintf(output, "%s\n", eighthundredtwo_three_buff);
+                            // 802.3 Global DSAP (?)
+                            else {
+                                printf("%s", _802_3_buff);
+                                fprintf(output, "%s", _802_3_buff);
                             }
                         }
+
+                        // 802.3 RAW
                         else
-                            printf("RAW\n");
-                        fprintf(output, "RAW\n");
-                    }
-                    print_MAC_address(packet, output);
+                        {
+                            printf(" RAW");
+                            fprintf(output, " RAW");
+                        }
 
-                    if (strcmp(frame_type, "Ethernet II") == 0)
-                    {
+                        print_MAC_address(packet, output);
+                    }
+
+                    // Je Ethernet II
+                    else if (strcmp(frame_type, "Ethernet II") == 0) {
+                        // Je ARP, vypiseme ARP-Request/Reply,IP, MAC
+                        if (strcmp(ethertype_buff, "ARP") == 0) {
+                            protocol_buff = get_protocol(packet, arp_operation);
+                            char* arp_buff = get_arp_value(packet, arp_operation);
+                            char arp_dst_ip[20];
+                            char arp_src_ip[20];
+
+                            char arp_src_mac[50];
+                            char arp_dst_mac[50];
+
+                            sprintf(arp_dst_ip, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
+                            sprintf(arp_src_ip, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
+                            sprintf(arp_dst_mac, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+                            sprintf(arp_src_mac, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
+
+                            // Request
+                            if (strcmp(arp_buff, "Request") == 0) {
+                                printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_dst_ip, arp_dst_mac);
+                                fprintf(output, "%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_dst_ip, arp_dst_mac);
+                                printf("Zdrojova IP: %s, Cielova IP: %s", arp_src_ip, arp_dst_ip);
+                                fprintf(output, "Zdrojova IP: %s, Cielova IP: %s", arp_src_ip, arp_dst_ip);
+
+                            }
+
+                            // Reply
+                            else {
+                                printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_src_ip, arp_src_mac);
+                                fprintf(output, "%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_src_ip, arp_src_mac);
+                                printf("Zdrojova IP: %s, Cielova IP: %s", arp_src_ip, arp_dst_ip);
+                                fprintf(output, "Zdrojova IP: %s, Cielova IP: %s", arp_src_ip, arp_dst_ip);
+                            }
+
+                            printf("%s\n", protocol_buff);
+                            fprintf(output, "%s\n", protocol_buff);
+
+                        }
+
+                        // Je IP, pokracujeme, len ulozime aky ma protokol
+                        else
+                            protocol_buff = get_protocol(packet, ip_protocols);
+
+                        // ramec cislo x, dlzky ramca
+                        print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
+
+                        // Ethernet II
+                        printf("\n%s", frame_type);
+                        fprintf(output, "\n%s", frame_type);
+
+                        // MAC adresy
+                        print_MAC_address(packet, output);
                         printf("%s\n", ethertype_buff);
                         fprintf(output, "%s\n", ethertype_buff);
+
+                        // Je IP
                         if (strcmp(ethertype_buff, "ARP") != 0)
                             print_IP_adress(packet, output);
-                        printf("%s\n", protocol_buff);
-                        fprintf(output, "%s\n", protocol_buff);
 
+                        printf("%s", protocol_buff);
+                        fprintf(output, "%s", protocol_buff);
 
-                        char* dst_ip_buff;
-                        dst_ip_buff = get_dst_ip(packet);
-                        if ((strcmp(ethertype_buff, "IPv4") == 0) && search_in_linked_list(head, dst_ip_buff) == false)
+                        char* src_ip_buff;
+                        src_ip_buff = get_src_ip(packet);
+                        if ((strcmp(ethertype_buff, "IPv4") == 0) /* && (strcmp(protocol_buff, "TCP") == 0)*/ &&
+                                search_in_ll(head, src_ip_buff) == false)
                         {
-                            if (strcmp(protocol_buff, "TCP") == 0)
-                                insert_node_to_linked_list(&head, get_dst_ip(packet));
-                            else
-                                insert_node_to_linked_list(&head, get_dst_ip(packet));
+                            // ???
+                            // printf("INSERTED\nIP: %s\nPROTOCOL: %s\n", src_ip_buff, protocol_buff);
+                            insert_src_ip_to_ll(&head, get_src_ip(packet));
                         }
 
                         char* port_buff;
-                        if (strcmp(protocol_buff, "TCP") == 0)
-                        {
+                        if (strcmp(protocol_buff, "TCP") == 0) {
                             port_buff = get_tcp_or_udp_port(packet, tcp_ports);
-                            printf("%s\n", port_buff);
-                            fprintf(output, "%s\n", port_buff);
+                            printf(" %s\n", port_buff);
+                            fprintf(output, " %s\n", port_buff);
                             print_src_port_and_dst_port(packet, output);
                         }
 
-                        else if (strcmp(protocol_buff, "UDP") == 0)
-                        {
+                        else if (strcmp(protocol_buff, "UDP") == 0) {
                             port_buff = get_tcp_or_udp_port(packet, udp_ports);
-                            printf("%s\n", port_buff);
-                            fprintf(output, "%s\n", port_buff);
+                            printf(" %s\n", port_buff);
+                            fprintf(output, " %s\n", port_buff);
                             print_src_port_and_dst_port(packet, output);
                         }
 
-
-                        else if (strcmp(protocol_buff, "ICMP") == 0)
-                        {
+                        else if (strcmp(protocol_buff, "ICMP") == 0) {
                             port_buff = get_icmp_port(packet, icmp_ports);
-                            printf("%s\n", port_buff);
-                            fprintf(output, "%s\n", port_buff);
+                            printf(" %s\n", port_buff);
+                            fprintf(output, " %s\n", port_buff);
                             print_src_port_and_dst_port(packet, output);
                         }
                     }
+
                     print_hexadecimal(pcap_header->len, packet, output);
                     printf("\n=======================================================================\n");
                     fprintf(output, "\n=======================================================================\n");
 
                 }
-                printf("IP adresy prijimajucich uzlov:\n");
-                fprintf(output, "IP adresy prijimajucich uzlov:\n");
-                print_linked_list(head, output);
-                print_ip_with_the_most_packets(head, output);
+                printf("IP adresy vysielajucich uzlov:\n");
+                fprintf(output, "IP adresy vysielajucich uzlov:\n");
+                print_ll(head, output);
+                print_ip_with_the_most_packets_sent(head, output);
                 pcap_close(pcap_file);
-                delete_linked_list(&head);
+                delete_ll(&head);
                 frames = 0;
-
                 break;
             }
 
-            case 2:
-            {
+            case 2: {
                 printf("Zadajte protokol. Moznosti su:\n\nHTTP\nHTTPS\nTELNET\nFTP CONTROL\nICMP\n");
                 printf("\n=======================================================================\n");
                 int i, j, k, l;
@@ -655,18 +617,11 @@ int main() {
                                 op_port = k;
                             }
                 // printf("%d %d %d\n", op_ethertype, op_protocol, op_port);
-                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL)
-                {
-                    printf("Subor sa neda otvorit!");
-                    fprintf(output, "Subor sa neda otvorit!");
-                }
-
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
                     char* frame_type = get_frame_type(packet);
-                    if (strcmp(frame_type, "Ethernet II") == 0)
-                    {
+                    if (strcmp(frame_type, "Ethernet II") == 0) {
                         char* ethertype_buff;
                         ethertype_buff = get_ether_type(packet, ethertypes);
                         char* protocol_buff;
@@ -687,8 +642,7 @@ int main() {
                         printf("&categories[op_ethertype][op_protocol][op_port]: %s\n", &categories[op_ethertype][op_protocol][op_port]);
                         */
                         // ked nasiel hladany protokol
-                        if (strcmp(port_buff, (const char *) &categories[op_ethertype][op_protocol][op_port]) == 0 || strcmp(protocol_buff, "ICMP") == 0 && strcmp(choice2, protocol_buff) == 0)
-                        {
+                        if (strcmp(port_buff, (const char *) &categories[op_ethertype][op_protocol][op_port]) == 0 || strcmp(protocol_buff, "ICMP") == 0 && strcmp(choice2, protocol_buff) == 0) {
                             print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
                             printf("\n%s", get_frame_type(packet));
                             fprintf(output, "\n%s", get_frame_type(packet));
@@ -708,8 +662,8 @@ int main() {
                         }
                     }
                 }
-                printf("Tento subor ubsahoval %d protokolov typu %s.\n", count, choice2);
-                fprintf(output, "Tento subor ubsahoval %d protokolov typu %s.\n", count, choice2);
+                printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                fprintf(output, "Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
                 pcap_close(pcap_file);
                 frames = 0;
                 op_ethertype = 0;
@@ -719,15 +673,12 @@ int main() {
             }
 
             // Doimplementacia
-            // vystupny subor je pod priecinkom txt pod menom output.txt
-            case 3:
-            {
+            case 3: {
                 char choice2[20];
                 strcpy(choice2, "STP");
                 int count = 0;
 
-                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL)
-                {
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
                     printf("Subor sa neda otvorit!");
                     fprintf(output, "Subor sa neda otvorit!");
                 }
@@ -736,13 +687,11 @@ int main() {
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
                     char* frame_type = get_frame_type(packet);
-                    if (strcmp(frame_type, "802.3") == 0)
-                    {
+                    if (strcmp(frame_type, "802.3") == 0) {
                         char* sap_buff;
                         sap_buff = get_802_3_value(packet, sap_file);
 
-                        if (strcmp(sap_buff, "STP") == 0)
-                        {
+                        if (strcmp(sap_buff, "STP") == 0) {
                             print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
                             printf("\n%s", get_frame_type(packet));
                             fprintf(output, "\n%s", get_frame_type(packet));
@@ -768,7 +717,6 @@ int main() {
                 break;
         }
     } while (choice != 0);
-
 
     return 0;
 }
