@@ -391,7 +391,7 @@ void open_txt_files(FILE **_802_3, FILE **ethertypes, FILE **ip_protocols, FILE 
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/eth-9.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -433,7 +433,7 @@ int main() {
                     char* _802_3_buff = get_802_3_value(packet, _802_3);
 
                     // Je 802.3
-                    if (strcmp(frame_type, "Ethernet II")) {
+                    if (strcmp(frame_type, "802.3") == 0) {
 
                         // ramec cislo x, dlzky ramca
                         print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
@@ -561,6 +561,10 @@ int main() {
                             print_src_port_and_dst_port(packet, output);
                         }
                     }
+
+                    // Je nieco ine???
+                    else
+                        printf("WHAT ARE U???\n");
 
                     print_hexadecimal(pcap_header->len, packet, output);
                     printf("\n=======================================================================\n");
