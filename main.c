@@ -523,6 +523,7 @@ int main() {
                 break;
             }
 
+            /* pocet ramcov nesmie byt viac ako 20 */
             case 2: {
 
                 if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
@@ -532,23 +533,23 @@ int main() {
 
                 printf("Zadajte protokol. Moznosti su:\n\nHTTP\nHTTPS\nTELNET\nFTP CONTROL\nICMP\n");
                 printf("\n=============================================================\n");
-                int i;
-                int j;
-                int k;
+
                 fill_categories_mda();
                 char choice2[20];
                 fgets(choice2, 20, stdin);
                 choice2[strlen(choice2) - 1] = '\0';
                 /* puts(choice2); */
+
                 int op_ethertype;
                 int op_protocol;
                 int op_port;
                 int count = 0;
+
+                int i, j, k;
                 for (i = 1; i < 3; i++)
                     for (j = 0; j < 4; j++)
                         for (k = 0; k < 7; k++)
-                            if (strcmp(choice2, (const char *) &categories[i][j][k][0]) == 0)
-                            {
+                            if (strcmp(choice2, (const char *) &categories[i][j][k][0]) == 0) {
                                 op_ethertype = i;
                                 op_protocol = j;
                                 op_port = k;
