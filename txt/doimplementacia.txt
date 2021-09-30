@@ -1,0 +1,42 @@
+// Doimplementacia
+            case 3: {
+                char choice2[20];
+                strcpy(choice2, "STP");
+                int count = 0;
+
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Subor sa neda otvorit!");
+                }
+
+
+                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                    frames++;
+                    char* frame_type = get_frame_type(packet);
+                    if (strcmp(frame_type, "802.3") == 0) {
+                        char* sap_buff;
+                        sap_buff = get_802_3_value(packet, sap_file);
+
+                        if (strcmp(sap_buff, "STP") == 0) {
+                            print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
+                            // printf("\n%s", get_frame_type(packet));
+                            fprintf(stdout, "\n%s", get_frame_type(packet));
+                            fprintf(output, "\n%s", get_frame_type(packet));
+                            print_MAC_address(packet, output);
+                            print_IP_adress(packet, output);
+                            print_src_port_and_dst_port(packet, output);
+                            print_hexadecimal(pcap_header->len, packet, output);
+                            count++;
+                            // printf("\n=======================================================================\n\n");
+                            fprintf(stdout, "\n=======================================================================\n\n");
+                            fprintf(output, "\n=======================================================================\n\n");
+
+                        }
+                    }
+                }
+                // printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                fprintf(stdout, "Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                fprintf(output, "Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                pcap_close(pcap_file);
+                frames = 0;
+                break;
+            }
