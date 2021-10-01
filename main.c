@@ -9,15 +9,17 @@ char**** categories[3][4][7][10];
 struct IP_header {
     char* src_ip_addr;
     int tx_packets;
+    bool is_tcp_packet;
     struct IP_header* next;
 };
 
 // pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
-void insert_src_ip_to_ll(struct IP_header **head_ref, char *ip_address) {
+void insert_src_ip_to_ll(struct IP_header **head_ref, char *ip_address, bool is_tcp) {
     struct IP_header* new_node = malloc(sizeof(struct IP_header));
     struct IP_header* last = *head_ref;
     new_node->src_ip_addr = ip_address;
     new_node->tx_packets = 1;
+    new_node->is_tcp_packet = is_tcp;
     new_node->next = NULL;
 
     if (*head_ref == NULL) {
@@ -34,7 +36,8 @@ void insert_src_ip_to_ll(struct IP_header **head_ref, char *ip_address) {
 // vypis spajaneho zoznamu
 void print_ll(struct IP_header *node) {
     while (node != NULL) {
-        printf("%s\n", node->src_ip_addr);
+        if (node->is_tcp_packet)
+            printf("%s\n", node->src_ip_addr);
         node = node->next;
     }
 }
@@ -361,7 +364,7 @@ void fill_categories_mda() {
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -483,11 +486,11 @@ int main() {
 
                         char* src_ip_buff;
                         src_ip_buff = get_src_ip(packet);
-                        if ((strcmp(ethertype_buff, "IPv4") == 0) /* && (strcmp(protocol_buff, "TCP") == 0)*/ &&
-                                search_in_ll(head, src_ip_buff) == false)
-                        {
-                            // ??? Staci iba IPv4 alebo ma byt aj TCP
-                            insert_src_ip_to_ll(&head, get_src_ip(packet));
+                        if ((strcmp(ethertype_buff, "IPv4") == 0)  && search_in_ll(head, src_ip_buff) == false) {
+                            if (strcmp(protocol_buff, "TCP") == 0)
+                                insert_src_ip_to_ll(&head, get_src_ip(packet), true);
+                            else
+                                insert_src_ip_to_ll(&head, get_src_ip(packet), false);
                         }
 
                         char* port_buff;
