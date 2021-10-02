@@ -13,6 +13,66 @@ struct IP_header {
     struct IP_header* next;
 };
 
+struct packet {
+    int frame_number;
+    char* src_ip_addr;
+    char* dst_ip_addr;
+    char* src_port;
+    char* dst_port;
+    char* flag;
+    struct packet* next;
+};
+
+// pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
+void insert_packet_to_ll(struct packet **head_ref, char* src_ip_addr, char* dst_ip_addr, char* src_port, char* dst_port, char* flag, int frame_number) {
+    struct packet* new_node = malloc(sizeof(struct packet));
+    struct packet* last = *head_ref;
+    new_node->src_ip_addr = src_ip_addr;
+    new_node->dst_ip_addr = dst_ip_addr;
+    new_node->src_port = src_port;
+    new_node->dst_port = dst_port;
+    new_node->flag = flag;
+    new_node->frame_number = frame_number;
+    new_node->next = NULL;
+
+    if (*head_ref == NULL) {
+        *head_ref = new_node;
+        return;
+    }
+
+    while (last->next != NULL)
+        last = last->next;
+
+    last->next = new_node;
+}
+
+// vypis spajaneho zoznamu
+void print_ll2(struct packet *node) {
+    while (node != NULL) {
+        printf("%s\n", node->src_ip_addr);
+        printf("%s\n", node->dst_ip_addr);
+        printf("%s\n", node->src_port);
+        printf("%s\n", node->dst_port);
+        printf("%s\n", node->flag);
+        printf("%d\n", node->frame_number);
+        printf("\n=============================================================\n");
+        node = node->next;
+    }
+}
+
+// vypis spajaneho zoznamu
+void print_packet(struct packet *node) {
+
+        printf("%s\n", node->src_ip_addr);
+        printf("%s\n", node->dst_ip_addr);
+        printf("%s\n", node->src_port);
+        printf("%s\n", node->dst_port);
+        printf("%s\n", node->flag);
+        printf("%d\n", node->frame_number);
+        printf("\n=============================================================\n");
+
+}
+
 // pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
 void insert_src_ip_to_ll(struct IP_header **head_ref, char *ip_address, bool is_tcp) {
     struct IP_header* new_node = malloc(sizeof(struct IP_header));
@@ -158,12 +218,50 @@ char* get_src_ip(const u_char* packet) {
     return src_ip_addr;
 }
 
+// funckia vrati cielovu IP adresu vo formate char *
+char* get_dst_ip(const u_char* packet) {
+    char* dst_ip_addr;
+    dst_ip_addr = malloc(sizeof(u_char) * 20);
+    sprintf(dst_ip_addr, "%d.%d.%d.%d", packet[30], packet[31], packet[32], packet[33]);
+    return dst_ip_addr;
+}
+
+char* get_src_port(const u_char* packet) {
+    char* src_port;
+    src_port = malloc(sizeof(u_char) * 20);
+    sprintf(src_port, "%d", packet[34] * 256 + packet[35]);
+    return src_port;
+
+}
+char* get_dst_port(const u_char* packet) {
+    char* dst_port;
+    dst_port = malloc(sizeof(u_char) * 20);
+    sprintf(dst_port, "%d", packet[36] * 256 + packet[37]);
+    return dst_port;
+
+}
+
 // funkcia vrati retazec s obsahom typom je ramca
 char* get_frame_type(const u_char* packet) {
     if (packet[12] * 256 + packet[13] > 0x5DC)
         return "Ethernet II";
     else
         return "802.3";
+}
+
+char* get_tcp_flag(const u_char* packet) {
+    if (packet[47] == 0x002)
+        return "SYN";
+    else if (packet[47] == 0x012)
+        return "SYN, ACK";
+    else if (packet[47] == 0x010)
+        return "ACK";
+    else if (packet[47] == 0x011)
+        return "FIN, ACK";
+    else if (packet[47] == 0x018)
+        return "PSH, ACK";
+    else if (packet[47] == 0x019)
+        return "FIN, PSH, ACK";
 }
 
 // nasledujuce funkcie su podobne, ale kazdy pracuje s inym suborom, a vracia nejaku hodnotu vycitaneho zo subor
@@ -364,7 +462,7 @@ void fill_categories_mda() {
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-10.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -381,6 +479,8 @@ int main() {
     struct pcap_pkthdr* pcap_header;
     const u_char* packet;
     struct IP_header* head = NULL;
+    struct packet* packet_head = NULL;
+    struct packet* headref = NULL;
     int frames = 0;
     int choice;
 
@@ -606,6 +706,93 @@ int main() {
                 op_ethertype = 0;
                 op_protocol = 0;
                 op_port = 0;
+                break;
+            }
+
+                /* pocet ramcov nesmie byt viac ako 20 */
+            case 3: {
+
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Chyba pri otvoreni PCAP suboru.");
+                    exit(0);
+                }
+
+                fill_categories_mda();
+                char choice2[20];
+                strcpy(choice2, "HTTP");
+
+                int count = 0;
+
+                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                    frames++;
+                    char* frame_type_buff = get_frame_type(packet);
+                    char* ethertype_buff;
+                    ethertype_buff = get_ether_type(packet, ethertypes);
+                    char* protocol_buff;
+                    protocol_buff = get_protocol(packet, ip_protocols);
+                    char* port_buff;
+                    port_buff = get_tcp_or_udp_port(packet, tcp_ports);
+
+                    // ak nasiel hladany protokol
+                    if (strcmp(port_buff, "HTTP") == 0) {
+                        insert_packet_to_ll(&packet_head, get_src_ip(packet), get_dst_ip(packet), get_src_port(packet), get_dst_port(packet), get_tcp_flag(packet), frames);
+//                        printf("%s\n", get_tcp_flag(packet));
+//                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
+//                        printf("\n%s", frame_type_buff);
+//                        print_MAC_address(packet);
+//                        printf("%s\n", ethertype_buff);
+//                        print_IP_adress(packet);
+//                        printf("%s\n", protocol_buff);
+//                        printf("%s\n", port_buff);
+//                        print_src_port_and_dst_port(packet);
+//                        print_hexadecimal(pcap_header->len, packet);
+                        count++;
+//                        printf("\n=============================================================\n");
+                    }
+                }
+
+                struct packet *temp = packet_head;
+                struct packet *temp2 = temp;
+                struct packet *temp3 = temp2;
+                struct packet *temp4 = temp3;
+
+                while (temp != NULL) {
+                    if (strcmp(temp -> flag, "SYN") == 0) {
+                        while (temp2 != NULL) {
+                            if (temp -> frame_number < temp2 -> frame_number && strcmp(temp->src_ip_addr, temp2->dst_ip_addr) == 0 && strcmp(temp->src_port, temp2->dst_port) == 0 && strcmp(temp->dst_port, temp2->src_port)  == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
+                                while (temp3 != NULL) {
+                                    if (temp2 -> frame_number < temp3 -> frame_number && (strcmp(temp2->src_ip_addr, temp3->dst_ip_addr) == 0 && strcmp(temp2->src_port, temp3->dst_port) == 0 && strcmp(temp2->dst_port, temp3->src_port)  == 0 && strcmp(temp3->flag, "ACK") == 0)) {
+                                        while (temp4 != NULL) {
+                                            if (temp3 -> frame_number < temp4 -> frame_number && (strcmp(temp3->src_ip_addr, temp4->dst_ip_addr) == 0 && strcmp(temp3->src_port, temp4->dst_port) == 0 && strcmp(temp3->dst_port, temp4->src_port)  == 0 /* && strcmp(temp4->flag, "FIN, ACK") == 0 */)) {
+                                                printf("temp:\n");
+                                                print_packet(temp);
+                                                printf("temp2:\n");
+                                                print_packet(temp2);
+                                                printf("temp3:\n");
+                                                print_packet(temp3);
+                                                printf("temp4:\n");
+                                                print_packet(temp4);
+                                                printf("\n");
+                                                break;
+                                            }
+                                                temp4 = temp4 -> next;
+                                        }
+
+                                    }
+                                    temp3 = temp3->next;
+                                }
+                            }
+                            temp2 = temp2 -> next;
+                        }
+                    }
+                    temp = temp -> next;
+                }
+
+
+                // print_ll2(packet_head);
+                printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                pcap_close(pcap_file);
+                frames = 0;
                 break;
             }
 
