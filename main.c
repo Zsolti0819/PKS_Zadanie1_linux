@@ -20,6 +20,7 @@ struct packet {
     char* src_port;
     char* dst_port;
     char* flag;
+    bool pass;
     struct packet* next;
 };
 
@@ -33,6 +34,7 @@ void insert_packet_to_ll(struct packet **head_ref, char* src_ip_addr, char* dst_
     new_node->dst_port = dst_port;
     new_node->flag = flag;
     new_node->frame_number = frame_number;
+    new_node->pass = false;
     new_node->next = NULL;
 
     if (*head_ref == NULL) {
@@ -47,30 +49,14 @@ void insert_packet_to_ll(struct packet **head_ref, char* src_ip_addr, char* dst_
 }
 
 // vypis spajaneho zoznamu
-void print_ll2(struct packet *node) {
-    while (node != NULL) {
-        printf("%s\n", node->src_ip_addr);
-        printf("%s\n", node->dst_ip_addr);
-        printf("%s\n", node->src_port);
-        printf("%s\n", node->dst_port);
-        printf("%s\n", node->flag);
-        printf("%d\n", node->frame_number);
-        printf("\n=============================================================\n");
-        node = node->next;
-    }
-}
-
-// vypis spajaneho zoznamu
 void print_packet(struct packet *node) {
-
-        printf("%s\n", node->src_ip_addr);
-        printf("%s\n", node->dst_ip_addr);
-        printf("%s\n", node->src_port);
-        printf("%s\n", node->dst_port);
-        printf("%s\n", node->flag);
-        printf("%d\n", node->frame_number);
-        printf("\n=============================================================\n");
-
+    printf("%s\n", node->flag);
+    printf("%d\n", node->frame_number);
+    printf("%s\n", node->src_ip_addr);
+    printf("%s\n", node->dst_ip_addr);
+    printf("%s\n", node->src_port);
+    printf("%s\n", node->dst_port);
+    printf("\n=============================================================\n");
 }
 
 // pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
@@ -233,6 +219,7 @@ char* get_src_port(const u_char* packet) {
     return src_port;
 
 }
+
 char* get_dst_port(const u_char* packet) {
     char* dst_port;
     dst_port = malloc(sizeof(u_char) * 20);
@@ -256,12 +243,11 @@ char* get_tcp_flag(const u_char* packet) {
         return "SYN, ACK";
     else if (packet[47] == 0x010)
         return "ACK";
-    else if (packet[47] == 0x011)
+    else if (packet[47] == 0x011 || packet[47] == 0x019)
         return "FIN, ACK";
     else if (packet[47] == 0x018)
         return "PSH, ACK";
-    else if (packet[47] == 0x019)
-        return "FIN, PSH, ACK";
+    return NULL;
 }
 
 // nasledujuce funkcie su podobne, ale kazdy pracuje s inym suborom, a vracia nejaku hodnotu vycitaneho zo subor
@@ -300,7 +286,7 @@ char* get_protocol(const u_char* packet, FILE* ip_protocols) {
 
     while ((c = getc(ip_protocols)) != '-') {
         if (c == '#') {
-            fscanf(ip_protocols, "%x", &value_in_the_file);
+            fscanf(ip_protocols, "%x ", &value_in_the_file);
             if (real_value == value_in_the_file) {
                 while ((c = getc(ip_protocols)) != '\n')
                     if (c != '\t')
@@ -460,6 +446,71 @@ void fill_categories_mda() {
     strcpy((char *) &categories[2][0][0][0], "ARP");
 }
 
+void verify_termination(struct packet *temp4, struct packet *temp5, struct packet *temp6, struct packet *temp7,
+                        int temp_frame_number, const char *temp_src_port) {
+    while (temp4 != NULL) {
+        if (temp_frame_number < temp4->frame_number && temp4->pass == false && strcmp(temp_src_port, temp4->dst_port) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
+            printf("TEST\n");
+            while (temp5 != NULL) {
+                if (temp4->frame_number < temp5->frame_number && temp4->pass == false && temp5->pass == false && strcmp(temp4->dst_port, temp5->src_port) == 0 && strcmp(temp5->flag, "ACK") == 0) {
+                    while (temp6 != NULL) {
+                        if (temp5->frame_number < temp6->frame_number && temp4->pass == false && temp5->pass == false && temp6->pass == false && strcmp(temp5->src_port, temp6->src_port) == 0 && strcmp(temp5->dst_port, temp6->dst_port) == 0 && strcmp(temp6->flag, "FIN, ACK") == 0) {
+                            while (temp7 != NULL) {
+                                if (temp6->frame_number < temp7->frame_number && temp4->pass == false && temp5->pass == false && temp6->pass == false && temp7->pass == false && strcmp(temp6->src_port, temp7->dst_port) == 0 && strcmp(temp6->dst_port, temp7->src_port) == 0 && strcmp(temp7->flag, "ACK") == 0) {
+                                    temp4 -> pass = true;
+                                    temp5 -> pass = true;
+                                    temp6 -> pass = true;
+                                    temp7 -> pass = true;
+
+//                                    print_packet(temp4);
+//                                    print_packet(temp5);
+//                                    print_packet(temp6);
+//                                    print_packet(temp7);
+                                    return;
+                                }
+                                temp7 = temp7->next;
+                            }
+                        }
+                        temp6 = temp6->next;
+                    }
+                }
+                temp5 = temp5->next;
+            }
+        }
+        temp4 = temp4->next;
+    }
+}
+
+char * verify_3WHS(struct packet *temp, struct packet *temp2, struct packet *temp3) {
+    while (temp != NULL) {
+        if (strcmp(temp -> flag, "SYN") == 0 && temp -> pass == false) {
+            while (temp2 != NULL) {
+                if (temp -> pass == false && temp2 -> pass == false && temp -> frame_number < temp2 -> frame_number && strcmp(temp->src_port, temp2->dst_port) == 0 && strcmp(temp->dst_port, temp2->src_port)  == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
+                    while (temp3 != NULL) {
+                        if (temp -> pass == false && temp2 -> pass == false && temp3-> pass == false && temp2 -> frame_number < temp3 -> frame_number && strcmp(temp2->src_port, temp3->dst_port) == 0 && strcmp(temp2->dst_port, temp3->src_port)  == 0 && strcmp(temp3->flag, "ACK") == 0) {
+                            temp -> pass = true;
+                            temp2 -> pass = true;
+                            temp3 -> pass = true;
+
+//                            print_packet(temp);
+//                            print_packet(temp2);
+//                            print_packet(temp3);
+
+                            char *_3whs_syn = malloc(sizeof(u_char) * 20);
+                            sprintf(_3whs_syn, "%d %s", temp -> frame_number, temp -> src_port);
+                            return _3whs_syn;
+                        }
+                        temp3 = temp3 -> next;
+                    }
+                }
+                temp2 = temp2-> next;
+            }
+        }
+        temp = temp -> next;
+    }
+    return "0 0";
+}
+
 int main() {
 
     char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-10.pcap" }; // sem vlozit subor
@@ -480,7 +531,6 @@ int main() {
     const u_char* packet;
     struct IP_header* head = NULL;
     struct packet* packet_head = NULL;
-    struct packet* headref = NULL;
     int frames = 0;
     int choice;
 
@@ -582,7 +632,7 @@ int main() {
                         if (strcmp(ethertype_buff, "ARP") != 0)
                             print_IP_adress(packet);
 
-                        printf("%s", protocol_buff);
+                        printf("%s\n", protocol_buff);
 
                         char* src_ip_buff;
                         src_ip_buff = get_src_ip(packet);
@@ -596,19 +646,19 @@ int main() {
                         char* port_buff;
                         if (strcmp(protocol_buff, "TCP") == 0) {
                             port_buff = get_tcp_or_udp_port(packet, tcp_ports);
-                            printf(" %s\n", port_buff);
+                            printf("%s\n", port_buff);
                             print_src_port_and_dst_port(packet);
                         }
 
                         else if (strcmp(protocol_buff, "UDP") == 0) {
                             port_buff = get_tcp_or_udp_port(packet, udp_ports);
-                            printf(" %s\n", port_buff);
+                            printf("%s\n", port_buff);
                             print_src_port_and_dst_port(packet);
                         }
 
                         else if (strcmp(protocol_buff, "ICMP") == 0) {
                             port_buff = get_icmp_port(packet, icmp_ports);
-                            printf(" %s\n", port_buff);
+                            printf("%s\n", port_buff);
                             print_src_port_and_dst_port(packet);
                         }
                     }
@@ -721,7 +771,53 @@ int main() {
                 char choice2[20];
                 strcpy(choice2, "HTTP");
 
-                int count = 0;
+
+                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                    frames++;
+                    char* port_buff;
+                    port_buff = get_tcp_or_udp_port(packet, tcp_ports);
+
+                    if (strcmp(port_buff, "HTTP") == 0) {
+                        insert_packet_to_ll(&packet_head, get_src_ip(packet), get_dst_ip(packet), get_src_port(packet), get_dst_port(packet), get_tcp_flag(packet), frames);
+                    }
+                }
+
+                frames = 0;
+
+                struct packet *temp = packet_head;
+                struct packet *temp2 = temp;
+                struct packet *temp3 = temp2;
+                struct packet *temp4 = packet_head;
+                struct packet *temp5 = temp4;
+                struct packet *temp6 = temp5;
+                struct packet *temp7 = temp6;
+
+                char *str = verify_3WHS(temp, temp2, temp3);
+                char* token;
+                char* rest = str;
+
+                char *array[3];
+                int x = 0;
+
+                while ((token = strtok_r(rest, " ", &rest)))
+                    array[x++] = token;
+
+                int temp_frame_number = atoi(array[0]);
+                char *temp_src_port = array[1];
+
+//                printf("%d %s\n", temp_frame_number, array[1]);
+
+                if (temp_frame_number == 0 && strcmp(temp_src_port, "0") == 0)
+                    printf("SYN ERROR\n");
+
+                verify_termination(temp4, temp5, temp6, temp7, temp_frame_number, temp_src_port);
+
+                pcap_close(pcap_file);
+
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Chyba pri otvoreni PCAP suboru.");
+                    exit(0);
+                }
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
@@ -733,64 +829,20 @@ int main() {
                     char* port_buff;
                     port_buff = get_tcp_or_udp_port(packet, tcp_ports);
 
-                    // ak nasiel hladany protokol
-                    if (strcmp(port_buff, "HTTP") == 0) {
-                        insert_packet_to_ll(&packet_head, get_src_ip(packet), get_dst_ip(packet), get_src_port(packet), get_dst_port(packet), get_tcp_flag(packet), frames);
-//                        printf("%s\n", get_tcp_flag(packet));
-//                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
-//                        printf("\n%s", frame_type_buff);
-//                        print_MAC_address(packet);
-//                        printf("%s\n", ethertype_buff);
-//                        print_IP_adress(packet);
-//                        printf("%s\n", protocol_buff);
-//                        printf("%s\n", port_buff);
-//                        print_src_port_and_dst_port(packet);
-//                        print_hexadecimal(pcap_header->len, packet);
-                        count++;
-//                        printf("\n=============================================================\n");
+                    if (strcmp(get_src_port(packet), temp_src_port) == 0 || strcmp(get_dst_port(packet), temp_src_port) == 0) {
+                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
+                        printf("\n%s", frame_type_buff);
+                        print_MAC_address(packet);
+                        printf("%s\n", ethertype_buff);
+                        print_IP_adress(packet);
+                        printf("%s\n", protocol_buff);
+                        printf("%s\n", port_buff);
+                        print_src_port_and_dst_port(packet);
+                        print_hexadecimal(pcap_header->len, packet);
+                        printf("\n=============================================================\n");
                     }
                 }
 
-                struct packet *temp = packet_head;
-                struct packet *temp2 = temp;
-                struct packet *temp3 = temp2;
-                struct packet *temp4 = temp3;
-
-                while (temp != NULL) {
-                    if (strcmp(temp -> flag, "SYN") == 0) {
-                        while (temp2 != NULL) {
-                            if (temp -> frame_number < temp2 -> frame_number && strcmp(temp->src_ip_addr, temp2->dst_ip_addr) == 0 && strcmp(temp->src_port, temp2->dst_port) == 0 && strcmp(temp->dst_port, temp2->src_port)  == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
-                                while (temp3 != NULL) {
-                                    if (temp2 -> frame_number < temp3 -> frame_number && (strcmp(temp2->src_ip_addr, temp3->dst_ip_addr) == 0 && strcmp(temp2->src_port, temp3->dst_port) == 0 && strcmp(temp2->dst_port, temp3->src_port)  == 0 && strcmp(temp3->flag, "ACK") == 0)) {
-                                        while (temp4 != NULL) {
-                                            if (temp3 -> frame_number < temp4 -> frame_number && (strcmp(temp3->src_ip_addr, temp4->dst_ip_addr) == 0 && strcmp(temp3->src_port, temp4->dst_port) == 0 && strcmp(temp3->dst_port, temp4->src_port)  == 0 /* && strcmp(temp4->flag, "FIN, ACK") == 0 */)) {
-                                                printf("temp:\n");
-                                                print_packet(temp);
-                                                printf("temp2:\n");
-                                                print_packet(temp2);
-                                                printf("temp3:\n");
-                                                print_packet(temp3);
-                                                printf("temp4:\n");
-                                                print_packet(temp4);
-                                                printf("\n");
-                                                break;
-                                            }
-                                                temp4 = temp4 -> next;
-                                        }
-
-                                    }
-                                    temp3 = temp3->next;
-                                }
-                            }
-                            temp2 = temp2 -> next;
-                        }
-                    }
-                    temp = temp -> next;
-                }
-
-
-                // print_ll2(packet_head);
-                printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
                 pcap_close(pcap_file);
                 frames = 0;
                 break;
@@ -803,3 +855,5 @@ int main() {
 
     return 0;
 }
+
+
