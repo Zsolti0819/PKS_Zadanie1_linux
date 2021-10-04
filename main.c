@@ -15,26 +15,34 @@ struct IP_header {
 
 struct packet {
     int frame_number;
-    char* src_ip_addr;
-    char* dst_ip_addr;
     char* src_port;
     char* dst_port;
     char* flag;
-    bool pass;
+    bool marked;
     struct packet* next;
 };
 
+// hladanie v spajanom zozname
+bool search_packet_in_ll(struct packet* head, int frame_number) {
+    struct packet* temp = head;
+    while (temp != NULL) {
+        if (temp->frame_number == frame_number)
+            return true;
+
+        temp = temp->next;
+    }
+    return false;
+}
+
 // pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
-void insert_packet_to_ll(struct packet **head_ref, char* src_ip_addr, char* dst_ip_addr, char* src_port, char* dst_port, char* flag, int frame_number) {
+void insert_packet_to_ll(struct packet **head_ref, char *src_port, char *dst_port, char *flag, int frame_number) {
     struct packet* new_node = malloc(sizeof(struct packet));
     struct packet* last = *head_ref;
-    new_node->src_ip_addr = src_ip_addr;
-    new_node->dst_ip_addr = dst_ip_addr;
     new_node->src_port = src_port;
     new_node->dst_port = dst_port;
     new_node->flag = flag;
     new_node->frame_number = frame_number;
-    new_node->pass = false;
+    new_node->marked = false;
     new_node->next = NULL;
 
     if (*head_ref == NULL) {
@@ -48,12 +56,24 @@ void insert_packet_to_ll(struct packet **head_ref, char* src_ip_addr, char* dst_
     last->next = new_node;
 }
 
-// vypis spajaneho zoznamu
+// vymazanie vsetkych uzlov
+void delete_packet_ll(struct packet** head_ref) {
+    struct packet* temp = *head_ref;
+    struct packet* next;
+
+    while (temp != NULL) {
+        next = temp->next;
+        free(temp);
+        temp = next;
+    }
+
+    *head_ref = NULL;
+}
+
+// vypis informacii o ramca
 void print_packet(struct packet *node) {
     printf("%s\n", node->flag);
     printf("%d\n", node->frame_number);
-    printf("%s\n", node->src_ip_addr);
-    printf("%s\n", node->dst_ip_addr);
     printf("%s\n", node->src_port);
     printf("%s\n", node->dst_port);
     printf("\n=============================================================\n");
@@ -133,13 +153,12 @@ bool search_in_ll(struct IP_header* head, char* data) {
 
 // vypis menu
 void print_menu() {
-    printf("\n=============================================================\n");
     printf("Vyberte o ktory vypis mate zaujem (zadajte cislo):\n");
     printf("0 - Koniec\n");
     printf("1 - Vypis vsetkych komunikacii\n");
-    printf("2 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
-    printf("3 - Doimplementacia\n");
-    printf("\n=============================================================\n");
+    printf("2 - Filter ramcov (viacere moznosti)\n");
+    printf("3 - HTTP komunikacie\n");
+    printf("=============================================================\n");
 }
 
 // pomocna funkcia, pouzivana pri menu
@@ -385,31 +404,31 @@ char* get_arp_value(const u_char* packet, FILE* arp_file) {
 
 }
 
-char* get_802_3_value(const u_char* packet, FILE* _802_03_file)
+char* get_802_3_value(const u_char* packet, FILE* _802_3_file)
 {
     int value_in_the_file = 0;
 
     int real_value1 = packet[14];
     int real_value2 = packet[15];
-    rewind(_802_03_file);
+    rewind(_802_3_file);
     char c;
-    char eighthundredtwo_three_buff[50] = { 0 };
+    char _802_3_buff[50] = {0 };
     int i = 0;
 
-    while ((c = getc(_802_03_file)) != '-') {
+    while ((c = getc(_802_3_file)) != '-') {
         if (c == '#') {
-            fscanf(_802_03_file, "%x", &value_in_the_file);
+            fscanf(_802_3_file, "%x", &value_in_the_file);
             if (real_value1 == value_in_the_file && real_value2 == value_in_the_file) {
-                while ((c = getc(_802_03_file)) != '\n')
+                while ((c = getc(_802_3_file)) != '\n')
                     if (c != '\t')
-                        eighthundredtwo_three_buff[i++] = c;
+                        _802_3_buff[i++] = c;
                 break;
             }
         }
     }
     char* eighthundredtwo_three_value;
     eighthundredtwo_three_value = malloc(sizeof(u_char) * i);
-    sprintf(eighthundredtwo_three_value, "%s", eighthundredtwo_three_buff);
+    sprintf(eighthundredtwo_three_value, "%s", _802_3_buff);
 
     return eighthundredtwo_three_value;
 }
@@ -446,27 +465,61 @@ void fill_categories_mda() {
     strcpy((char *) &categories[2][0][0][0], "ARP");
 }
 
-void verify_termination(struct packet *temp4, struct packet *temp5, struct packet *temp6, struct packet *temp7,
+char * verify_3WHS(struct packet *temp, struct packet *temp2, struct packet *temp3) {
+    while (temp != NULL) {
+        if (strcmp(temp -> flag, "SYN") == 0 && temp -> marked == false) {
+            while (temp2 != NULL) {
+                if (temp -> marked == false && temp2 -> marked == false && temp -> frame_number < temp2 -> frame_number && strcmp(temp->src_port, temp2->dst_port) == 0 && strcmp(temp->dst_port, temp2->src_port) == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
+                    while (temp3 != NULL) {
+                        if (temp -> marked == false && temp2 -> marked == false && temp3-> marked == false && temp2 -> frame_number < temp3 -> frame_number && strcmp(temp2->src_port, temp3->dst_port) == 0 && strcmp(temp2->dst_port, temp3->src_port) == 0 && strcmp(temp3->flag, "ACK") == 0) {
+                            temp -> marked = true;
+                            temp2 -> marked = true;
+                            temp3 -> marked = true;
+
+//                            print_packet(temp);
+//                            print_packet(temp2);
+//                            print_packet(temp3);
+
+                            char *_3WHS_SYN = malloc(sizeof(u_char) * 20);
+                            sprintf(_3WHS_SYN, "%d %s", temp -> frame_number, temp -> src_port);
+                            return _3WHS_SYN;
+                        }
+                        temp3 = temp3 -> next;
+                    }
+                }
+                temp2 = temp2-> next;
+            }
+        }
+        temp = temp -> next;
+    }
+    char *no_3WHS = malloc(sizeof(u_char) * 20);
+    strcpy(no_3WHS, "0 0");
+    return no_3WHS;
+}
+
+char * verify_termination(struct packet *temp4, struct packet *temp5, struct packet *temp6, struct packet *temp7,
                         int temp_frame_number, const char *temp_src_port) {
     while (temp4 != NULL) {
-        if (temp_frame_number < temp4->frame_number && temp4->pass == false && strcmp(temp_src_port, temp4->dst_port) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
-            printf("TEST\n");
+        if (temp_frame_number < temp4->frame_number && temp4->marked == false && strcmp(temp_src_port, temp4->dst_port) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
             while (temp5 != NULL) {
-                if (temp4->frame_number < temp5->frame_number && temp4->pass == false && temp5->pass == false && strcmp(temp4->dst_port, temp5->src_port) == 0 && strcmp(temp5->flag, "ACK") == 0) {
+                if (temp4->frame_number < temp5->frame_number && temp4->marked == false && temp5->marked == false && strcmp(temp4->dst_port, temp5->src_port) == 0 && strcmp(temp5->flag, "ACK") == 0) {
                     while (temp6 != NULL) {
-                        if (temp5->frame_number < temp6->frame_number && temp4->pass == false && temp5->pass == false && temp6->pass == false && strcmp(temp5->src_port, temp6->src_port) == 0 && strcmp(temp5->dst_port, temp6->dst_port) == 0 && strcmp(temp6->flag, "FIN, ACK") == 0) {
+                        if (temp5->frame_number < temp6->frame_number && temp4->marked == false && temp5->marked == false && temp6->marked == false && strcmp(temp5->src_port, temp6->src_port) == 0 && strcmp(temp5->dst_port, temp6->dst_port) == 0 && strcmp(temp6->flag, "FIN, ACK") == 0) {
                             while (temp7 != NULL) {
-                                if (temp6->frame_number < temp7->frame_number && temp4->pass == false && temp5->pass == false && temp6->pass == false && temp7->pass == false && strcmp(temp6->src_port, temp7->dst_port) == 0 && strcmp(temp6->dst_port, temp7->src_port) == 0 && strcmp(temp7->flag, "ACK") == 0) {
-                                    temp4 -> pass = true;
-                                    temp5 -> pass = true;
-                                    temp6 -> pass = true;
-                                    temp7 -> pass = true;
+                                if (temp6->frame_number < temp7->frame_number && temp4->marked == false && temp5->marked == false && temp6->marked == false && temp7->marked == false && strcmp(temp6->src_port, temp7->dst_port) == 0 && strcmp(temp6->dst_port, temp7->src_port) == 0 && strcmp(temp7->flag, "ACK") == 0) {
+                                    temp4 -> marked = true;
+                                    temp5 -> marked = true;
+                                    temp6 -> marked = true;
+                                    temp7 -> marked = true;
 
 //                                    print_packet(temp4);
 //                                    print_packet(temp5);
 //                                    print_packet(temp6);
 //                                    print_packet(temp7);
-                                    return;
+
+                                    char *graceful_connection_release = malloc(sizeof(u_char) * 20);
+                                    sprintf(graceful_connection_release, "%d %s", temp7 -> frame_number, temp7 -> dst_port);
+                                    return graceful_connection_release;
                                 }
                                 temp7 = temp7->next;
                             }
@@ -479,36 +532,9 @@ void verify_termination(struct packet *temp4, struct packet *temp5, struct packe
         }
         temp4 = temp4->next;
     }
-}
-
-char * verify_3WHS(struct packet *temp, struct packet *temp2, struct packet *temp3) {
-    while (temp != NULL) {
-        if (strcmp(temp -> flag, "SYN") == 0 && temp -> pass == false) {
-            while (temp2 != NULL) {
-                if (temp -> pass == false && temp2 -> pass == false && temp -> frame_number < temp2 -> frame_number && strcmp(temp->src_port, temp2->dst_port) == 0 && strcmp(temp->dst_port, temp2->src_port)  == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
-                    while (temp3 != NULL) {
-                        if (temp -> pass == false && temp2 -> pass == false && temp3-> pass == false && temp2 -> frame_number < temp3 -> frame_number && strcmp(temp2->src_port, temp3->dst_port) == 0 && strcmp(temp2->dst_port, temp3->src_port)  == 0 && strcmp(temp3->flag, "ACK") == 0) {
-                            temp -> pass = true;
-                            temp2 -> pass = true;
-                            temp3 -> pass = true;
-
-//                            print_packet(temp);
-//                            print_packet(temp2);
-//                            print_packet(temp3);
-
-                            char *_3whs_syn = malloc(sizeof(u_char) * 20);
-                            sprintf(_3whs_syn, "%d %s", temp -> frame_number, temp -> src_port);
-                            return _3whs_syn;
-                        }
-                        temp3 = temp3 -> next;
-                    }
-                }
-                temp2 = temp2-> next;
-            }
-        }
-        temp = temp -> next;
-    }
-    return "0 0";
+    char *not_terminated = malloc(sizeof(u_char) * 20);
+    strcpy(not_terminated, "0 0");
+    return not_terminated;
 }
 
 int main() {
@@ -526,6 +552,7 @@ int main() {
     FILE *arp_operation;
     FILE *sap_file;
     open_txt_files(&_802_3, &ethertypes, &ip_protocols, &tcp_ports, &udp_ports, &icmp_ports, &arp_operation, &sap_file);
+    fill_categories_mda();
 
     struct pcap_pkthdr* pcap_header;
     const u_char* packet;
@@ -676,7 +703,6 @@ int main() {
                 break;
             }
 
-            /* pocet ramcov nesmie byt viac ako 20 */
             case 2: {
 
                 if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
@@ -687,7 +713,7 @@ int main() {
                 printf("Zadajte protokol. Moznosti su:\n\nHTTP\nHTTPS\nTELNET\nFTP CONTROL\nICMP\n");
                 printf("\n=============================================================\n");
 
-                fill_categories_mda();
+
                 char choice2[20];
                 fgets(choice2, 20, stdin);
                 choice2[strlen(choice2) - 1] = '\0';
@@ -759,7 +785,6 @@ int main() {
                 break;
             }
 
-                /* pocet ramcov nesmie byt viac ako 20 */
             case 3: {
 
                 if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
@@ -767,22 +792,18 @@ int main() {
                     exit(0);
                 }
 
-                fill_categories_mda();
                 char choice2[20];
                 strcpy(choice2, "HTTP");
-
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
                     char* port_buff;
                     port_buff = get_tcp_or_udp_port(packet, tcp_ports);
 
-                    if (strcmp(port_buff, "HTTP") == 0) {
-                        insert_packet_to_ll(&packet_head, get_src_ip(packet), get_dst_ip(packet), get_src_port(packet), get_dst_port(packet), get_tcp_flag(packet), frames);
+                    if (strcmp(port_buff, "HTTP") == 0 && search_packet_in_ll(packet_head, frames) == false) {
+                        insert_packet_to_ll(&packet_head, get_src_port(packet), get_dst_port(packet), get_tcp_flag(packet), frames);
                     }
                 }
-
-                frames = 0;
 
                 struct packet *temp = packet_head;
                 struct packet *temp2 = temp;
@@ -792,32 +813,101 @@ int main() {
                 struct packet *temp6 = temp5;
                 struct packet *temp7 = temp6;
 
-                char *str = verify_3WHS(temp, temp2, temp3);
-                char* token;
-                char* rest = str;
 
-                char *array[3];
-                int x = 0;
+                char *_1st_complete_com;
+                int _1st_complete_com_start;
+                int _1st_complete_com_end;
 
-                while ((token = strtok_r(rest, " ", &rest)))
-                    array[x++] = token;
+                char *_1st_incomplete_com;
+                int _1st_incomplete_com_start;
 
-                int temp_frame_number = atoi(array[0]);
-                char *temp_src_port = array[1];
+                bool _complete_com_fullfilled = false;
+                bool _incomplete_com_fullfilled = false;
 
-//                printf("%d %s\n", temp_frame_number, array[1]);
+                while (true) {
+                    char *str1 = verify_3WHS(temp, temp2, temp3);
+                    char* token1;
+                    char* rest1 = str1;
+                    char *string_array1[3];
+                    int x1 = 0;
+                    while ((token1 = strtok_r(rest1, " ", &rest1)))
+                        string_array1[x1++] = token1;
+                    int temp_frame_number1 = atoi(string_array1[0]);
+                    char *temp_src_port1 = string_array1[1];
+//                    printf("%d %s\n", temp_frame_number1, temp_src_port1);
 
-                if (temp_frame_number == 0 && strcmp(temp_src_port, "0") == 0)
-                    printf("SYN ERROR\n");
+                    // 3WHS Success, looking for complete com
+                    if (strcmp(temp_src_port1, "0") && _complete_com_fullfilled == false) {
+                        char *str2 = verify_termination(temp4, temp5, temp6, temp7, temp_frame_number1, temp_src_port1);
+                        char* token2;
+                        char* rest2 = str2;
+                        char *string_array2[3];
+                        int x2 = 0;
+                        while ((token2 = strtok_r(rest2, " ", &rest2)))
+                            string_array2[x2++] = token2;
+                        int temp_frame_number2 = atoi(string_array2[0]);
+                        char *temp_src_port2 = string_array2[1];
+//                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
 
-                verify_termination(temp4, temp5, temp6, temp7, temp_frame_number, temp_src_port);
+                        // 4WHS Success aka complete com
+                        if (strcmp(temp_src_port2, "0")) {
+                            _complete_com_fullfilled = true;
+                            _1st_complete_com = temp_src_port1;
+                            _1st_complete_com_start = temp_frame_number1;
+                            _1st_complete_com_end = temp_frame_number2;
+//                            printf("1st COMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            continue;
+                        }
+
+                        // 4WHS Fail at the first itaration
+                        else if (strcmp(temp_src_port2, "0") == 0) {
+                            _1st_incomplete_com = temp_src_port1;
+                            _1st_incomplete_com_start = temp_frame_number1;
+                            _incomplete_com_fullfilled = true;
+//                            printf("1st INCOMPLETE com = start: %d %s end: %d %s (first iteration)\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            continue;
+                        }
+                    }
+
+                    // 3WHS Success, looking for incomplete com
+                    else if (strcmp(temp_src_port1, "0") && _complete_com_fullfilled == true) {
+                        char *str2 = verify_termination(temp4, temp5, temp6, temp7, temp_frame_number1, temp_src_port1);
+                        char* token2;
+                        char* rest2 = str2;
+                        char *string_array2[3];
+                        int x2 = 0;
+                        while ((token2 = strtok_r(rest2, " ", &rest2)))
+                            string_array2[x2++] = token2;
+
+                        int temp_frame_number2 = atoi(string_array2[0]);
+                        char *temp_src_port2 = string_array2[1];
+//                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
+
+                        if (strcmp(temp_src_port2, "0") == 0) {
+                            _incomplete_com_fullfilled = true;
+                            _1st_incomplete_com = temp_src_port1;
+                            _1st_incomplete_com_start = temp_frame_number1;
+//                            printf("1st INCOMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            break;
+                        }
+                    }
+                    // 3WHS Fail
+                    else
+                        break;
+                }
+
 
                 pcap_close(pcap_file);
+                frames = 0;
 
                 if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
                     printf("Chyba pri otvoreni PCAP suboru.");
                     exit(0);
                 }
+
+                printf("\n=============================================================\n");
+                printf("Prva kompletna komunikacia - ramce od %d do %d", _1st_complete_com_start, _1st_complete_com_end);
+                printf("\n=============================================================\n");
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
@@ -829,7 +919,42 @@ int main() {
                     char* port_buff;
                     port_buff = get_tcp_or_udp_port(packet, tcp_ports);
 
-                    if (strcmp(get_src_port(packet), temp_src_port) == 0 || strcmp(get_dst_port(packet), temp_src_port) == 0) {
+                    if (strcmp(get_src_port(packet), _1st_complete_com) == 0 || strcmp(get_dst_port(packet), _1st_complete_com) == 0) {
+                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
+                        printf("\n%s", frame_type_buff);
+                        print_MAC_address(packet);
+                        printf("%s\n", ethertype_buff);
+                        print_IP_adress(packet);
+                        printf("%s\n", protocol_buff);
+                        printf("%s\n", port_buff);
+                        print_src_port_and_dst_port(packet);
+                        print_hexadecimal(pcap_header->len, packet);
+                        printf("\n=============================================================\n");
+                    }
+                }
+
+                pcap_close(pcap_file);
+                frames = 0;
+
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Chyba pri otvoreni PCAP suboru.");
+                    exit(0);
+                }
+
+                printf("Prva nekompletna komunikacia - ramec %d", _1st_incomplete_com_start);
+                printf("\n=============================================================\n");
+
+                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                    frames++;
+                    char* frame_type_buff = get_frame_type(packet);
+                    char* ethertype_buff;
+                    ethertype_buff = get_ether_type(packet, ethertypes);
+                    char* protocol_buff;
+                    protocol_buff = get_protocol(packet, ip_protocols);
+                    char* port_buff;
+                    port_buff = get_tcp_or_udp_port(packet, tcp_ports);
+
+                    if (strcmp(get_src_port(packet), _1st_incomplete_com) == 0 || strcmp(get_dst_port(packet), _1st_incomplete_com) == 0) {
                         print_basic_info(frames, pcap_header->caplen, pcap_header->len);
                         printf("\n%s", frame_type_buff);
                         print_MAC_address(packet);
