@@ -260,13 +260,15 @@ char* get_tcp_flag(const u_char* packet) {
         return "SYN";
     else if (packet[47] == 0x012)
         return "SYN, ACK";
+    else if (packet[47] == 0x014)
+        return "RST, ACK";
     else if (packet[47] == 0x010)
         return "ACK";
     else if (packet[47] == 0x011 || packet[47] == 0x019)
         return "FIN, ACK";
     else if (packet[47] == 0x018)
         return "PSH, ACK";
-    return NULL;
+    return "NULL";
 }
 
 // nasledujuce funkcie su podobne, ale kazdy pracuje s inym suborom, a vracia nejaku hodnotu vycitaneho zo subor
@@ -539,7 +541,7 @@ char * verify_termination(struct packet *temp4, struct packet *temp5, struct pac
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-10.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-6.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -814,17 +816,19 @@ int main() {
                 struct packet *temp7 = temp6;
 
 
-                char *_1st_complete_com;
-                int _1st_complete_com_start;
-                int _1st_complete_com_end;
+                char *_1st_complete_com = "0";
+                int _1st_complete_com_start = 0;
+                int _1st_complete_com_end = 0;
 
                 char *_1st_incomplete_com;
-                int _1st_incomplete_com_start;
+                int _1st_incomplete_com_start = 0;
 
                 bool _complete_com_fullfilled = false;
                 bool _incomplete_com_fullfilled = false;
 
                 while (true) {
+                    if (_complete_com_fullfilled == true && _incomplete_com_fullfilled == true)
+                        break;
                     char *str1 = verify_3WHS(temp, temp2, temp3);
                     char* token1;
                     char* rest1 = str1;
@@ -834,7 +838,8 @@ int main() {
                         string_array1[x1++] = token1;
                     int temp_frame_number1 = atoi(string_array1[0]);
                     char *temp_src_port1 = string_array1[1];
-//                    printf("%d %s\n", temp_frame_number1, temp_src_port1);
+                    printf("[New loop]\n");
+                    printf("%d %s\n", temp_frame_number1, temp_src_port1);
 
                     // 3WHS Success, looking for complete com
                     if (strcmp(temp_src_port1, "0") && _complete_com_fullfilled == false) {
@@ -847,7 +852,8 @@ int main() {
                             string_array2[x2++] = token2;
                         int temp_frame_number2 = atoi(string_array2[0]);
                         char *temp_src_port2 = string_array2[1];
-//                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
+                        printf("[3WHS Success, complete com not yet fullfilled]\n");
+                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
 
                         // 4WHS Success aka complete com
                         if (strcmp(temp_src_port2, "0")) {
@@ -855,16 +861,18 @@ int main() {
                             _1st_complete_com = temp_src_port1;
                             _1st_complete_com_start = temp_frame_number1;
                             _1st_complete_com_end = temp_frame_number2;
-//                            printf("1st COMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            printf("[4WHS Success, first complete com]\n");
+                            printf("1st COMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
                             continue;
                         }
 
                         // 4WHS Fail at the first itaration
-                        else if (strcmp(temp_src_port2, "0") == 0) {
+                        else if (strcmp(temp_src_port2, "0") == 0 && _incomplete_com_fullfilled == false) {
                             _1st_incomplete_com = temp_src_port1;
                             _1st_incomplete_com_start = temp_frame_number1;
                             _incomplete_com_fullfilled = true;
-//                            printf("1st INCOMPLETE com = start: %d %s end: %d %s (first iteration)\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            printf("[4WHS Fail, incomplete com fullfilled, first loop]\n");
+                            printf("1st INCOMPLETE com = start: %d %s end: %d %s (first iteration)\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
                             continue;
                         }
                     }
@@ -881,21 +889,24 @@ int main() {
 
                         int temp_frame_number2 = atoi(string_array2[0]);
                         char *temp_src_port2 = string_array2[1];
-//                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
+                        printf("[3WHS Success, complete com fullfilled]\n");
+                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
 
                         if (strcmp(temp_src_port2, "0") == 0) {
                             _incomplete_com_fullfilled = true;
                             _1st_incomplete_com = temp_src_port1;
                             _1st_incomplete_com_start = temp_frame_number1;
-//                            printf("1st INCOMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            printf("[4WHS Fail, incomplete com fullfilled]\n");
+                            printf("1st INCOMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
                             break;
                         }
                     }
                     // 3WHS Fail
-                    else
+                    else{
+                        printf("[3WHS Fail, no complete com found]\n");
                         break;
+                    }
                 }
-
 
                 pcap_close(pcap_file);
                 frames = 0;
@@ -905,9 +916,18 @@ int main() {
                     exit(0);
                 }
 
-                printf("\n=============================================================\n");
-                printf("Prva kompletna komunikacia - ramce od %d do %d", _1st_complete_com_start, _1st_complete_com_end);
-                printf("\n=============================================================\n");
+                if (_1st_complete_com_start != 0 && _1st_complete_com_end != 0) {
+                    printf("\n=============================================================\n");
+                    printf("Prva kompletna komunikacia - ramce od %d do %d", _1st_complete_com_start,
+                           _1st_complete_com_end);
+                    printf("\n=============================================================\n");
+                }
+
+                else if (_1st_complete_com_start == 0 && _1st_complete_com_end == 0) {
+                    printf("\n=============================================================\n");
+                    printf("Subor neobsahoval ani jednu kompletnu komunikaciu");
+                    printf("\n=============================================================\n");
+                }
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
@@ -919,7 +939,7 @@ int main() {
                     char* port_buff;
                     port_buff = get_tcp_or_udp_port(packet, tcp_ports);
 
-                    if (strcmp(get_src_port(packet), _1st_complete_com) == 0 || strcmp(get_dst_port(packet), _1st_complete_com) == 0) {
+                    if (strcmp(port_buff, "HTTP") == 0 && (strcmp(get_src_port(packet), _1st_complete_com) == 0 || strcmp(get_dst_port(packet), _1st_complete_com) == 0)) {
                         print_basic_info(frames, pcap_header->caplen, pcap_header->len);
                         printf("\n%s", frame_type_buff);
                         print_MAC_address(packet);
@@ -941,8 +961,15 @@ int main() {
                     exit(0);
                 }
 
-                printf("Prva nekompletna komunikacia - ramec %d", _1st_incomplete_com_start);
-                printf("\n=============================================================\n");
+                if (_1st_incomplete_com_start != 0) {
+                    printf("Prva nekompletna komunikacia - ramec %d", _1st_incomplete_com_start);
+                    printf("\n=============================================================\n");
+                }
+
+                else if (_1st_incomplete_com_start == 0) {
+                    printf("Subor neobsahoval ani jednu nekompletnu komunikaciu");
+                    printf("\n=============================================================\n");
+                }
 
                 while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
                     frames++;
