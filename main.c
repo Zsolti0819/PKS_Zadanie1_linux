@@ -6,27 +6,19 @@
 
 char**** categories[3][4][7][10];
 
-struct IP_header {
-    char* src_ip_addr;
-    int tx_packets;
-    bool is_tcp_packet;
-    struct IP_header* next;
-};
-
-struct packet {
-    int frame_number;
-    char* src_port;
-    char* dst_port;
+struct Packet {
+    int frameNumber;
+    char* srcPort;
+    char* dstPort;
     char* flag;
-    bool marked;
-    struct packet* next;
+    bool isMarked;
+    struct Packet* next;
 };
 
-// hladanie v spajanom zozname
-bool search_packet_in_ll(struct packet* head, int frame_number) {
-    struct packet* temp = head;
+bool findPacketInList(struct Packet* head, int frameNumber) {
+    struct Packet* temp = head;
     while (temp != NULL) {
-        if (temp->frame_number == frame_number)
+        if (temp->frameNumber == frameNumber)
             return true;
 
         temp = temp->next;
@@ -34,125 +26,122 @@ bool search_packet_in_ll(struct packet* head, int frame_number) {
     return false;
 }
 
-// pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
-void insert_packet_to_ll(struct packet **head_ref, char *src_port, char *dst_port, char *flag, int frame_number) {
-    struct packet* new_node = malloc(sizeof(struct packet));
-    struct packet* last = *head_ref;
-    new_node->src_port = src_port;
-    new_node->dst_port = dst_port;
-    new_node->flag = flag;
-    new_node->frame_number = frame_number;
-    new_node->marked = false;
-    new_node->next = NULL;
+void insertPacketToList(struct Packet **headRef, char *srcPort, char *dstPort, char *flag, int frameNumber) {
+    struct Packet* newNode = malloc(sizeof(struct Packet));
+    struct Packet* last = *headRef;
+    newNode->srcPort = srcPort;
+    newNode->dstPort = dstPort;
+    newNode->flag = flag;
+    newNode->frameNumber = frameNumber;
+    newNode->isMarked = false;
+    newNode->next = NULL;
 
-    if (*head_ref == NULL) {
-        *head_ref = new_node;
+    if (*headRef == NULL) {
+        *headRef = newNode;
         return;
     }
 
     while (last->next != NULL)
         last = last->next;
 
-    last->next = new_node;
+    last->next = newNode;
 }
 
-// vymazanie vsetkych uzlov
-void delete_packet_ll(struct packet** head_ref) {
-    struct packet* temp = *head_ref;
-    struct packet* next;
+void deletePacketList(struct Packet** headRef) {
+    struct Packet* temp = *headRef;
+    struct Packet* next;
 
     while (temp != NULL) {
         next = temp->next;
         free(temp);
         temp = next;
     }
-
-    *head_ref = NULL;
+    *headRef = NULL;
 }
 
-// vypis informacii o ramca
-void print_packet(struct packet *node) {
+void printPacket(struct Packet *node) {
     printf("%s\n", node->flag);
-    printf("%d\n", node->frame_number);
-    printf("%s\n", node->src_port);
-    printf("%s\n", node->dst_port);
+    printf("%d\n", node->frameNumber);
+    printf("%s\n", node->srcPort);
+    printf("%s\n", node->dstPort);
     printf("\n=============================================================\n");
 }
 
-// pomocna funkcia na vkladanie uzlov do spajaneho zoznamu
-void insert_src_ip_to_ll(struct IP_header **head_ref, char *ip_address, bool is_tcp) {
-    struct IP_header* new_node = malloc(sizeof(struct IP_header));
-    struct IP_header* last = *head_ref;
-    new_node->src_ip_addr = ip_address;
-    new_node->tx_packets = 1;
-    new_node->is_tcp_packet = is_tcp;
-    new_node->next = NULL;
+struct IPv4Packet {
+    char* srcIPAdress;
+    int txPackets;
+    bool isTCP;
+    struct IPv4Packet* next;
+};
 
-    if (*head_ref == NULL) {
-        *head_ref = new_node;
+bool findIPv4PacketInList(struct IPv4Packet* head, char* data) {
+    struct IPv4Packet* temp = head;
+    while (temp != NULL) {
+        if (strcmp(temp->srcIPAdress, data) == 0) {
+            temp->txPackets++;
+            return true;
+        }
+        temp = temp->next;
+    }
+    return false;
+}
+
+void insertIPv4PacketToList(struct IPv4Packet **headRef, char *srcIPAdress, bool isTCP) {
+    struct IPv4Packet* newNode = malloc(sizeof(struct IPv4Packet));
+    struct IPv4Packet* last = *headRef;
+    newNode->srcIPAdress = srcIPAdress;
+    newNode->txPackets = 1;
+    newNode->isTCP = isTCP;
+    newNode->next = NULL;
+
+    if (*headRef == NULL) {
+        *headRef = newNode;
         return;
     }
 
     while (last->next != NULL)
         last = last->next;
 
-    last->next = new_node;
+    last->next = newNode;
 }
 
-// vypis spajaneho zoznamu
-void print_ll(struct IP_header *node) {
+void deleteIPv4PacketList(struct IPv4Packet** headRef) {
+    struct IPv4Packet* temp = *headRef;
+    struct IPv4Packet* next;
+
+    while (temp != NULL) {
+        next = temp->next;
+        free(temp);
+        temp = next;
+    }
+    *headRef = NULL;
+}
+
+void printIPv4PacketList(struct IPv4Packet *node) {
     while (node != NULL) {
-        if (node->is_tcp_packet)
-            printf("%s\n", node->src_ip_addr);
+        if (node->isTCP)
+            printf("%s\n", node->srcIPAdress);
         node = node->next;
     }
 }
 
-void print_ip_with_the_most_packets_sent(struct IP_header *start) {
-    struct IP_header* temp = start;
-    struct IP_header* temp2 = NULL;
+void printIPWithTheMostPacketsSent(struct IPv4Packet *start) {
+    struct IPv4Packet* temp = start;
+    struct IPv4Packet* temp2 = NULL;
 
     int max = 0;
     while (temp != NULL) {
-        if (temp->tx_packets > max) {
+        if (temp->txPackets > max) {
             temp2 = temp;
-            max = temp->tx_packets;
+            max = temp->txPackets;
         }
         temp = temp->next;
     }
     if (temp2 != NULL)
-        printf("Adresa uzla s najvacsim poctom odoslanych paketov:\n%s\t%d paketov\n", temp2->src_ip_addr, temp2->tx_packets);
+        printf("Adresa uzla s najvacsim poctom odoslanych paketov:\n%s\t%d paketov\n", temp2->srcIPAdress, temp2->txPackets);
 }
 
-// vymazanie vsetkych uzlov
-void delete_ll(struct IP_header** head_ref) {
-    struct IP_header* temp = *head_ref;
-    struct IP_header* next;
-
-    while (temp != NULL) {
-        next = temp->next;
-        free(temp);
-        temp = next;
-    }
-
-    *head_ref = NULL;
-}
-
-// hladanie v spajanom zozname
-bool search_in_ll(struct IP_header* head, char* data) {
-    struct IP_header* temp = head;
-    while (temp != NULL) {
-        if (strcmp(temp->src_ip_addr, data) == 0) {
-            temp->tx_packets++;
-            return true;
-        }
-        temp = temp->next;
-    }
-    return false;
-}
-
-// vypis menu
-void print_menu() {
+void printMenu() {
     printf("Vyberte o ktory vypis mate zaujem (zadajte cislo):\n");
     printf("0 - Koniec\n");
     printf("1 - Vypis vsetkych komunikacii\n");
@@ -161,14 +150,12 @@ void print_menu() {
     printf("=============================================================\n");
 }
 
-// pomocna funkcia, pouzivana pri menu
-void seek_to_next_line(void) {
+void seekToNextLine(void) {
     int c;
     while ((c = fgetc(stdin)) != EOF && c != '\n');
 }
 
-// zakladne informacie, pouzivane v bode 1.
-void print_basic_info(int frame, int caplen, int len) {
+void printBasicInfo(int frame, int caplen, int len) {
     printf("ramec %i\n", frame);
     printf("dlzka ramca poskytnuta pcap API - %d B\n", caplen);
     len = len + 4;
@@ -176,8 +163,7 @@ void print_basic_info(int frame, int caplen, int len) {
         printf("dlzka ramca prenasaneho po mediu - %d B", len);
 }
 
-// vypis MAC adresy
-void print_MAC_address(const u_char *packet) {
+void printMACAddress(const u_char *packet) {
     printf("\nZdrojova MAC adresa: ");
     for (int i = 6; i < 12; i++)
         printf("%.2X ", packet[i]);
@@ -189,14 +175,12 @@ void print_MAC_address(const u_char *packet) {
     printf("\n");
 }
 
-// vypis IP adresy
-void print_IP_adress(const u_char *packet) {
+void printIPAdresses(const u_char *packet) {
     printf("zdrojova IP adresa: %d.%d.%d.%d\n", packet[26], packet[27], packet[28], packet[29]);
     printf("cielova IP adresa: %d.%d.%d.%d\n", packet[30], packet[31], packet[32], packet[33]);
 }
 
-// formalny vypis v hexa tvare, pouzivan v bode 1.
-void print_hexadecimal(int i, const u_char *packet) {
+void printHexadecimal(int i, const u_char *packet) {
     int move;
     for (move = 0; (move < i); move++) {
         if ((move % 8) == 0 && (move % 16) != 0)
@@ -210,52 +194,211 @@ void print_hexadecimal(int i, const u_char *packet) {
     printf("\n");
 }
 
-// vypis zdrojoveho a cieloveho portu
-void print_src_port_and_dst_port(const u_char *packet) {
+void printSrcPortAndDstPort(const u_char *packet) {
     printf("zdrojovy port: %d\ncielovy port: %d\n", packet[34] * 256 + packet[35], packet[36] * 256 + packet[37]);
 }
 
-// funckia vrati zdrojovu IP adresu vo formate char *
-char* get_src_ip(const u_char* packet) {
-    char* src_ip_addr;
-    src_ip_addr = malloc(sizeof(u_char) * 20);
-    sprintf(src_ip_addr, "%d.%d.%d.%d", packet[26], packet[27], packet[28], packet[29]);
-    return src_ip_addr;
+char* getSrcIP(const u_char* packet) {
+    char* srcIPAddress;
+    srcIPAddress = malloc(sizeof(u_char) * 20);
+    sprintf(srcIPAddress, "%d.%d.%d.%d", packet[26], packet[27], packet[28], packet[29]);
+    return srcIPAddress;
 }
 
-// funckia vrati cielovu IP adresu vo formate char *
-char* get_dst_ip(const u_char* packet) {
-    char* dst_ip_addr;
-    dst_ip_addr = malloc(sizeof(u_char) * 20);
-    sprintf(dst_ip_addr, "%d.%d.%d.%d", packet[30], packet[31], packet[32], packet[33]);
-    return dst_ip_addr;
+char* getDstIP(const u_char* packet) {
+    char* dstIPAddress;
+    dstIPAddress = malloc(sizeof(u_char) * 20);
+    sprintf(dstIPAddress, "%d.%d.%d.%d", packet[30], packet[31], packet[32], packet[33]);
+    return dstIPAddress;
 }
 
-char* get_src_port(const u_char* packet) {
-    char* src_port;
-    src_port = malloc(sizeof(u_char) * 20);
-    sprintf(src_port, "%d", packet[34] * 256 + packet[35]);
-    return src_port;
-
-}
-
-char* get_dst_port(const u_char* packet) {
-    char* dst_port;
-    dst_port = malloc(sizeof(u_char) * 20);
-    sprintf(dst_port, "%d", packet[36] * 256 + packet[37]);
-    return dst_port;
+char* getSrcPort(const u_char* packet) {
+    char* srcPort;
+    srcPort = malloc(sizeof(u_char) * 20);
+    sprintf(srcPort, "%d", packet[34] * 256 + packet[35]);
+    return srcPort;
 
 }
 
-// funkcia vrati retazec s obsahom typom je ramca
-char* get_frame_type(const u_char* packet) {
+char* getDstPort(const u_char* packet) {
+    char* dstPort;
+    dstPort = malloc(sizeof(u_char) * 20);
+    sprintf(dstPort, "%d", packet[36] * 256 + packet[37]);
+    return dstPort;
+
+}
+
+char* getFrameType(const u_char* packet) {
     if (packet[12] * 256 + packet[13] > 0x5DC)
         return "Ethernet II";
     else
         return "802.3";
 }
 
-char* get_tcp_flag(const u_char* packet) {
+char* getEtherType(const u_char* packet, FILE* ethertypes) {
+    int valueInTheFile = 0;
+    int realValue = packet[12] * 256 + packet[13];
+    rewind(ethertypes);
+    char c;
+    char ethertypeBuff[50] = { 0 };
+    int i = 0;
+
+    while ((c = getc(ethertypes)) != '-') {
+        if (c == '#') {
+            fscanf(ethertypes, "%x", &valueInTheFile);
+            if (realValue == valueInTheFile) {
+                while ((c = getc(ethertypes)) != '\n')
+                    if (c != '\t')
+                        ethertypeBuff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* ethertype;
+    ethertype = malloc(sizeof(u_char) * i);
+    sprintf(ethertype, "%s", ethertypeBuff);
+    return ethertype;
+}
+
+char* getProtocol(const u_char* packet, FILE* IPProtocols) {
+    int valueInTheFile = 0;
+    int realValue = packet[23];
+    rewind(IPProtocols);
+    char c;
+    char protocolBuff[50] = { 0 };
+    int i = 0;
+
+    while ((c = getc(IPProtocols)) != '-') {
+        if (c == '#') {
+            fscanf(IPProtocols, "%x ", &valueInTheFile);
+            if (realValue == valueInTheFile) {
+                while ((c = getc(IPProtocols)) != '\n')
+                    if (c != '\t')
+                        protocolBuff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* protocol;
+    protocol = malloc(sizeof(u_char) * i);
+    sprintf(protocol, "%s", protocolBuff);
+    return protocol;
+}
+
+char* getTCPOrUDPPort(const u_char* packet, FILE* fileWithPorts) {
+    int valueInTheFile = 0;
+
+    int srcRealValue = packet[34] * 256 + packet[35];
+    int dstRealValue = packet[36] * 256 + packet[37];
+    rewind(fileWithPorts);
+    char c;
+    char TCPPortBuff[50] = { 0 };
+    int i = 0;
+
+    while ((c = getc(fileWithPorts)) != '-') {
+        if (c == '#') {
+            fscanf(fileWithPorts, "%x", &valueInTheFile);
+            if (srcRealValue == valueInTheFile || dstRealValue == valueInTheFile) {
+                while ((c = getc(fileWithPorts)) != '\n')
+                    if (c != '\t')
+                        TCPPortBuff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* TCPPort;
+    TCPPort = malloc(sizeof(u_char) * i);
+    sprintf(TCPPort, "%s", TCPPortBuff);
+
+    return TCPPort;
+}
+
+char* getICMPPort(const u_char* packet, FILE* ICMPPorts) {
+    int valueInTheFile = 0;
+
+    int realValue = packet[34];
+
+    rewind(ICMPPorts);
+    char c;
+    char ICMPPortBuff[50] = { 0 };
+    int i = 0;
+
+    while ((c = getc(ICMPPorts)) != '-') {
+        if (c == '#') {
+            fscanf(ICMPPorts, "%x", &valueInTheFile);
+            if (realValue == valueInTheFile) {
+                while ((c = getc(ICMPPorts)) != '\n')
+                    if (c != '\t')
+                        ICMPPortBuff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* ICMPPort;
+    ICMPPort = malloc(sizeof(u_char) * i);
+    sprintf(ICMPPort, "%s", ICMPPortBuff);
+
+    return ICMPPort;
+}
+
+char* getARPValue(const u_char* packet, FILE* ARPFile) {
+    int valueInTheFile = 0;
+
+    int realValue = packet[20] * 256 + packet[21];
+    rewind(ARPFile);
+    char c;
+    char ARPBuff[50] = { 0 };
+    int i = 0;
+
+    while ((c = getc(ARPFile)) != '-') {
+        if (c == '#') {
+            fscanf(ARPFile, "%x", &valueInTheFile);
+            if (realValue == valueInTheFile) {
+                while ((c = getc(ARPFile)) != '\n')
+                    if (c != '\t')
+                        ARPBuff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* ARPValue;
+    ARPValue = malloc(sizeof(u_char) * i);
+    sprintf(ARPValue, "%s", ARPBuff);
+
+    return ARPValue;
+
+}
+
+char* get802_3Value(const u_char* packet, FILE* _802_3File)
+{
+    int valueInTheFile = 0;
+
+    int realValue1 = packet[14];
+    int realValue2 = packet[15];
+    rewind(_802_3File);
+    char c;
+    char _802_3Buff[50] = { 0 };
+    int i = 0;
+
+    while ((c = getc(_802_3File)) != '-') {
+        if (c == '#') {
+            fscanf(_802_3File, "%x", &valueInTheFile);
+            if (realValue1 == valueInTheFile && realValue2 == valueInTheFile) {
+                while ((c = getc(_802_3File)) != '\n')
+                    if (c != '\t')
+                        _802_3Buff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* _802_3Value;
+    _802_3Value = malloc(sizeof(u_char) * i);
+    sprintf(_802_3Value, "%s", _802_3Buff);
+
+    return _802_3Value;
+}
+
+char* getTCPFlag(const u_char* packet) {
     if (packet[47] == 0x002)
         return "SYN";
     else if (packet[47] == 0x012)
@@ -271,182 +414,18 @@ char* get_tcp_flag(const u_char* packet) {
     return "NULL";
 }
 
-// nasledujuce funkcie su podobne, ale kazdy pracuje s inym suborom, a vracia nejaku hodnotu vycitaneho zo subor
-char* get_ether_type(const u_char* packet, FILE* ethertypes) {
-    int value_in_the_file = 0;
-    int real_value = packet[12] * 256 + packet[13];
-    rewind(ethertypes);
-    char c;
-    char ethertype_buff[50] = { 0 };
-    int i = 0;
-
-    while ((c = getc(ethertypes)) != '-') {
-        if (c == '#') {
-            fscanf(ethertypes, "%x", &value_in_the_file);
-            if (real_value == value_in_the_file) {
-                while ((c = getc(ethertypes)) != '\n')
-                    if (c != '\t')
-                        ethertype_buff[i++] = c;
-                break;
-            }
-        }
-    }
-    char* ethertype;
-    ethertype = malloc(sizeof(u_char) * i);
-    sprintf(ethertype, "%s", ethertype_buff);
-    return ethertype;
+void openTxtFiles(FILE **_802_3, FILE **ethertypes, FILE **IPProtocols, FILE **TCPPorts, FILE **UDPPorts, FILE **ICMPPorts, FILE **ARPOperation, FILE **SAPFile) {
+    if (((*_802_3) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3.txt suboru.\n");
+    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
+    if (((*IPProtocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/IPProtocols.txt", "r")) == NULL) printf("Chyba pri otvoreni IPProtocols.txt suboru.\n");
+    if (((*TCPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/TCPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni TCPPorts.txt suboru.\n");
+    if (((*UDPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/UDPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni UDPPorts.txt suboru.\n");
+    if (((*ICMPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ICMPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni ICMPPorts.txt suboru.\n");
+    if (((*ARPOperation) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ARPValues.txt", "r")) == NULL) printf("Chyba pri otvoreni ARPValues.txt suboru.\n");
+    if (((*SAPFile) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/SAPFile.txt", "r")) == NULL) printf("Chyba pri otvoreni SAPFile.txt suboru.\n");
 }
 
-char* get_protocol(const u_char* packet, FILE* ip_protocols) {
-    int value_in_the_file = 0;
-    int real_value = packet[23];
-    rewind(ip_protocols);
-    char c;
-    char protocol_buff[50] = { 0 };
-    int i = 0;
-
-    while ((c = getc(ip_protocols)) != '-') {
-        if (c == '#') {
-            fscanf(ip_protocols, "%x ", &value_in_the_file);
-            if (real_value == value_in_the_file) {
-                while ((c = getc(ip_protocols)) != '\n')
-                    if (c != '\t')
-                        protocol_buff[i++] = c;
-                break;
-            }
-        }
-    }
-    char* protocol;
-    protocol = malloc(sizeof(u_char) * i);
-    sprintf(protocol, "%s", protocol_buff);
-    return protocol;
-}
-
-char* get_tcp_or_udp_port(const u_char* packet, FILE* file_w_ports) {
-    int value_in_the_file = 0;
-
-    int src_real_value = packet[34] * 256 + packet[35];
-    int dst_real_value = packet[36] * 256 + packet[37];
-    rewind(file_w_ports);
-    char c;
-    char tcp_port_buff[50] = { 0 };
-    int i = 0;
-
-    while ((c = getc(file_w_ports)) != '-') {
-        if (c == '#') {
-            fscanf(file_w_ports, "%x", &value_in_the_file);
-            if (src_real_value == value_in_the_file || dst_real_value == value_in_the_file) {
-                while ((c = getc(file_w_ports)) != '\n')
-                    if (c != '\t')
-                        tcp_port_buff[i++] = c;
-                break;
-            }
-        }
-    }
-    char* tcp_port;
-    tcp_port = malloc(sizeof(u_char) * i);
-    sprintf(tcp_port, "%s", tcp_port_buff);
-
-    return tcp_port;
-}
-
-char* get_icmp_port(const u_char* packet, FILE* icmp_ports) {
-    int value_in_the_file = 0;
-
-    int real_value = packet[34];
-
-    rewind(icmp_ports);
-    char c;
-    char icmp_port_buff[50] = { 0 };
-    int i = 0;
-
-    while ((c = getc(icmp_ports)) != '-') {
-        if (c == '#') {
-            fscanf(icmp_ports, "%x", &value_in_the_file);
-            if (real_value == value_in_the_file) {
-                while ((c = getc(icmp_ports)) != '\n')
-                    if (c != '\t')
-                        icmp_port_buff[i++] = c;
-                break;
-            }
-        }
-    }
-    char* icmp_port;
-    icmp_port = malloc(sizeof(u_char) * i);
-    sprintf(icmp_port, "%s", icmp_port_buff);
-
-    return icmp_port;
-}
-
-char* get_arp_value(const u_char* packet, FILE* arp_file) {
-    int value_in_the_file = 0;
-
-    int real_value = packet[20] * 256 + packet[21];
-    rewind(arp_file);
-    char c;
-    char arp_buff[50] = { 0 };
-    int i = 0;
-
-    while ((c = getc(arp_file)) != '-') {
-        if (c == '#') {
-            fscanf(arp_file, "%x", &value_in_the_file);
-            if (real_value == value_in_the_file) {
-                while ((c = getc(arp_file)) != '\n')
-                    if (c != '\t')
-                        arp_buff[i++] = c;
-                break;
-            }
-        }
-    }
-    char* arp_value;
-    arp_value = malloc(sizeof(u_char) * i);
-    sprintf(arp_value, "%s", arp_buff);
-
-    return arp_value;
-
-}
-
-char* get_802_3_value(const u_char* packet, FILE* _802_3_file)
-{
-    int value_in_the_file = 0;
-
-    int real_value1 = packet[14];
-    int real_value2 = packet[15];
-    rewind(_802_3_file);
-    char c;
-    char _802_3_buff[50] = {0 };
-    int i = 0;
-
-    while ((c = getc(_802_3_file)) != '-') {
-        if (c == '#') {
-            fscanf(_802_3_file, "%x", &value_in_the_file);
-            if (real_value1 == value_in_the_file && real_value2 == value_in_the_file) {
-                while ((c = getc(_802_3_file)) != '\n')
-                    if (c != '\t')
-                        _802_3_buff[i++] = c;
-                break;
-            }
-        }
-    }
-    char* eighthundredtwo_three_value;
-    eighthundredtwo_three_value = malloc(sizeof(u_char) * i);
-    sprintf(eighthundredtwo_three_value, "%s", _802_3_buff);
-
-    return eighthundredtwo_three_value;
-}
-
-void open_txt_files(FILE **_802_3, FILE **ethertypes, FILE **ip_protocols, FILE **tcp_ports, FILE **udp_ports, FILE **icmp_ports, FILE **arp_operation, FILE **sap_file) {
-    if (((*_802_3) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/802_3.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3.txt suboru.\n");
-    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
-    if (((*ip_protocols) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/ip_protocols.txt", "r")) == NULL) printf("Chyba pri otvoreni ip_protocols.txt suboru.\n");
-    if (((*tcp_ports) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/tcp_ports.txt", "r")) == NULL) printf("Chyba pri otvoreni tcp_ports.txt suboru.\n");
-    if (((*udp_ports) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/udp_ports.txt", "r")) == NULL) printf("Chyba pri otvoreni udp_ports.txt suboru.\n");
-    if (((*icmp_ports) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/icmp_ports.txt", "r")) == NULL) printf("Chyba pri otvoreni icmp_ports.txt suboru.\n");
-    if (((*arp_operation) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/arp_values.txt", "r")) == NULL) printf("Chyba pri otvoreni arp_values.txt suboru.\n");
-    if (((*sap_file) = fopen("/home/zsolti/CLionProjects/PKS_Z1/txt/sap_file.txt", "r")) == NULL) printf("Chyba pri otvoreni sap_file.txt suboru.\n");
-}
-
-void fill_categories_mda() {
+void fillCategoriesMDA() {
     int i, j, k, l;
     for (i = 0; i < 3; i++)
         for (j = 0; j < 4; j++)
@@ -467,24 +446,24 @@ void fill_categories_mda() {
     strcpy((char *) &categories[2][0][0][0], "ARP");
 }
 
-char * verify_3WHS(struct packet *temp, struct packet *temp2, struct packet *temp3) {
+char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp3) {
     while (temp != NULL) {
-        if (strcmp(temp -> flag, "SYN") == 0 && temp -> marked == false) {
+        if (strcmp(temp -> flag, "SYN") == 0 && temp -> isMarked == false) {
             while (temp2 != NULL) {
-                if (temp -> marked == false && temp2 -> marked == false && temp -> frame_number < temp2 -> frame_number && strcmp(temp->src_port, temp2->dst_port) == 0 && strcmp(temp->dst_port, temp2->src_port) == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
+                if (temp -> isMarked == false && temp2 -> isMarked == false && temp -> frameNumber < temp2 -> frameNumber && strcmp(temp->srcPort, temp2->dstPort) == 0 && strcmp(temp->dstPort, temp2->srcPort) == 0 && strcmp(temp2->flag, "SYN, ACK") == 0) {
                     while (temp3 != NULL) {
-                        if (temp -> marked == false && temp2 -> marked == false && temp3-> marked == false && temp2 -> frame_number < temp3 -> frame_number && strcmp(temp2->src_port, temp3->dst_port) == 0 && strcmp(temp2->dst_port, temp3->src_port) == 0 && strcmp(temp3->flag, "ACK") == 0) {
-                            temp -> marked = true;
-                            temp2 -> marked = true;
-                            temp3 -> marked = true;
+                        if (temp -> isMarked == false && temp2 -> isMarked == false && temp3-> isMarked == false && temp2 -> frameNumber < temp3 -> frameNumber && strcmp(temp2->srcPort, temp3->dstPort) == 0 && strcmp(temp2->dstPort, temp3->srcPort) == 0 && strcmp(temp3->flag, "ACK") == 0) {
+                            temp -> isMarked = true;
+                            temp2 -> isMarked = true;
+                            temp3 -> isMarked = true;
 
-//                            print_packet(temp);
-//                            print_packet(temp2);
-//                            print_packet(temp3);
+//                            printPacket(temp);
+//                            printPacket(temp2);
+//                            printPacket(temp3);
 
-                            char *_3WHS_SYN = malloc(sizeof(u_char) * 20);
-                            sprintf(_3WHS_SYN, "%d %s", temp -> frame_number, temp -> src_port);
-                            return _3WHS_SYN;
+                            char *_3WHSSYN = malloc(sizeof(u_char) * 20);
+                            sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> srcPort);
+                            return _3WHSSYN;
                         }
                         temp3 = temp3 -> next;
                     }
@@ -494,34 +473,33 @@ char * verify_3WHS(struct packet *temp, struct packet *temp2, struct packet *tem
         }
         temp = temp -> next;
     }
-    char *no_3WHS = malloc(sizeof(u_char) * 20);
-    strcpy(no_3WHS, "0 0");
-    return no_3WHS;
+    char *no3WHS = malloc(sizeof(u_char) * 20);
+    strcpy(no3WHS, "0 0");
+    return no3WHS;
 }
 
-char * verify_termination(struct packet *temp4, struct packet *temp5, struct packet *temp6, struct packet *temp7,
-                        int temp_frame_number, const char *temp_src_port) {
+char * verifyTerminationOld(struct Packet *temp4, struct Packet *temp5, struct Packet *temp6, struct Packet *temp7, int temp_frame_number, const char *temp_src_port) {
     while (temp4 != NULL) {
-        if (temp_frame_number < temp4->frame_number && temp4->marked == false && strcmp(temp_src_port, temp4->dst_port) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
+        if (temp_frame_number < temp4->frameNumber && temp4->isMarked == false && strcmp(temp_src_port, temp4->dstPort) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
             while (temp5 != NULL) {
-                if (temp4->frame_number < temp5->frame_number && temp4->marked == false && temp5->marked == false && strcmp(temp4->dst_port, temp5->src_port) == 0 && strcmp(temp5->flag, "ACK") == 0) {
+                if (temp4->frameNumber < temp5->frameNumber && temp4->isMarked == false && temp5->isMarked == false && strcmp(temp4->dstPort, temp5->srcPort) == 0 && strcmp(temp5->flag, "ACK") == 0) {
                     while (temp6 != NULL) {
-                        if (temp5->frame_number < temp6->frame_number && temp4->marked == false && temp5->marked == false && temp6->marked == false && strcmp(temp5->src_port, temp6->src_port) == 0 && strcmp(temp5->dst_port, temp6->dst_port) == 0 && strcmp(temp6->flag, "FIN, ACK") == 0) {
+                        if (temp5->frameNumber < temp6->frameNumber && temp4->isMarked == false && temp5->isMarked == false && temp6->isMarked == false && strcmp(temp5->srcPort, temp6->srcPort) == 0 && strcmp(temp5->dstPort, temp6->dstPort) == 0 && strcmp(temp6->flag, "FIN, ACK") == 0) {
                             while (temp7 != NULL) {
-                                if (temp6->frame_number < temp7->frame_number && temp4->marked == false && temp5->marked == false && temp6->marked == false && temp7->marked == false && strcmp(temp6->src_port, temp7->dst_port) == 0 && strcmp(temp6->dst_port, temp7->src_port) == 0 && strcmp(temp7->flag, "ACK") == 0) {
-                                    temp4 -> marked = true;
-                                    temp5 -> marked = true;
-                                    temp6 -> marked = true;
-                                    temp7 -> marked = true;
+                                if (temp6->frameNumber < temp7->frameNumber && temp4->isMarked == false && temp5->isMarked == false && temp6->isMarked == false && temp7->isMarked == false && strcmp(temp6->srcPort, temp7->dstPort) == 0 && strcmp(temp6->dstPort, temp7->srcPort) == 0 && strcmp(temp7->flag, "ACK") == 0) {
+                                    temp4 -> isMarked = true;
+                                    temp5 -> isMarked = true;
+                                    temp6 -> isMarked = true;
+                                    temp7 -> isMarked = true;
 
-//                                    print_packet(temp4);
-//                                    print_packet(temp5);
-//                                    print_packet(temp6);
-//                                    print_packet(temp7);
+//                                    printPacket(temp4);
+//                                    printPacket(temp5);
+//                                    printPacket(temp6);
+//                                    printPacket(temp7);
 
-                                    char *graceful_connection_release = malloc(sizeof(u_char) * 20);
-                                    sprintf(graceful_connection_release, "%d %s", temp7 -> frame_number, temp7 -> dst_port);
-                                    return graceful_connection_release;
+                                    char *_4WHSFIN = malloc(sizeof(u_char) * 20);
+                                    sprintf(_4WHSFIN, "%d %s", temp7 -> frameNumber, temp7 -> dstPort);
+                                    return _4WHSFIN;
                                 }
                                 temp7 = temp7->next;
                             }
@@ -534,39 +512,39 @@ char * verify_termination(struct packet *temp4, struct packet *temp5, struct pac
         }
         temp4 = temp4->next;
     }
-    char *not_terminated = malloc(sizeof(u_char) * 20);
-    strcpy(not_terminated, "0 0");
-    return not_terminated;
+    char *no4WHS = malloc(sizeof(u_char) * 20);
+    strcpy(no4WHS, "0 0");
+    return no4WHS;
 }
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Z1/vzorky_pcap_na_analyzu/trace-6.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-6.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
     FILE *_802_3;
     FILE *ethertypes;
-    FILE *ip_protocols;
-    FILE *tcp_ports;
-    FILE *udp_ports;
-    FILE *icmp_ports;
-    FILE *arp_operation;
-    FILE *sap_file;
-    open_txt_files(&_802_3, &ethertypes, &ip_protocols, &tcp_ports, &udp_ports, &icmp_ports, &arp_operation, &sap_file);
-    fill_categories_mda();
+    FILE *IPProtocols;
+    FILE *TCPPorts;
+    FILE *UDPPorts;
+    FILE *ICMPPorts;
+    FILE *ARPOperation;
+    FILE *SAPFile;
+    openTxtFiles(&_802_3, &ethertypes, &IPProtocols, &TCPPorts, &UDPPorts, &ICMPPorts, &ARPOperation, &SAPFile);
+    fillCategoriesMDA();
 
-    struct pcap_pkthdr* pcap_header;
+    struct pcap_pkthdr* pcapHeader;
     const u_char* packet;
-    struct IP_header* head = NULL;
-    struct packet* packet_head = NULL;
+    struct IPv4Packet* IPv4Head = NULL;
+    struct Packet* head = NULL;
     int frames = 0;
     int choice;
 
     do {
-        print_menu();
+        printMenu();
         scanf("%d", &choice);
-        seek_to_next_line();
+        seekToNextLine();
         switch (choice) {
             case 1: {
 
@@ -575,132 +553,132 @@ int main() {
                     exit(0);
                 }
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
-                    char* frame_type = get_frame_type(packet);
-                    char* ethertype_buff = get_ether_type(packet, ethertypes);
-                    char* protocol_buff;
-                    char* _802_3_buff = get_802_3_value(packet, _802_3);
+                    char* frameType = getFrameType(packet);
+                    char* ethertypeBuff = getEtherType(packet, ethertypes);
+                    char* protocolBuff;
+                    char* _802_3Buff = get802_3Value(packet, _802_3);
 
                     // Je 802.3
-                    if (strcmp(frame_type, "802.3") == 0) {
+                    if (strcmp(frameType, "802.3") == 0) {
 
                         // ramec cislo x, dlzky ramca
-                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
+                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
 
                         // 802.3
-                        printf("\n%s", frame_type);
+                        printf("\n%s", frameType);
 
-                        if (strcmp(_802_3_buff, "SNAP") == 0 || strcmp(_802_3_buff, "Global DSAP") == 0) {
+                        if (strcmp(_802_3Buff, "SNAP") == 0 || strcmp(_802_3Buff, "Global DSAP") == 0) {
 
                             // 802.3 SNAP + LLC
-                            if (strcmp(_802_3_buff, "SNAP") == 0)
-                                printf(" LLC + %s", _802_3_buff);
+                            if (strcmp(_802_3Buff, "SNAP") == 0)
+                                printf(" LLC + %s", _802_3Buff);
                             
                             // 802.3 Global DSAP (?)
                             else
-                                printf("%s", _802_3_buff);
+                                printf("%s", _802_3Buff);
 
                         }
 
                         // 802.3 RAW
                         else
                             printf(" RAW");
-                        
-                        print_MAC_address(packet);
+
+                        printMACAddress(packet);
                     }
 
                     // Je Ethernet II
-                    else if (strcmp(frame_type, "Ethernet II") == 0) {
+                    else if (strcmp(frameType, "Ethernet II") == 0) {
                         // Je ARP, vypiseme ARP-Request/Reply,IP, MAC
-                        if (strcmp(ethertype_buff, "ARP") == 0) {
-                            protocol_buff = get_protocol(packet, arp_operation);
-                            char* arp_buff = get_arp_value(packet, arp_operation);
-                            char arp_dst_ip[20];
-                            char arp_src_ip[20];
+                        if (strcmp(ethertypeBuff, "ARP") == 0) {
+                            protocolBuff = getProtocol(packet, ARPOperation);
+                            char* ARPBuff = getARPValue(packet, ARPOperation);
+                            char ARPDSTIP[20];
+                            char ARPSRCIP[20];
 
-                            char arp_src_mac[50];
-                            char arp_dst_mac[50];
+                            char ARPSRCMAC[50];
+                            char ARPDSTMAC[50];
 
-                            sprintf(arp_dst_ip, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
-                            sprintf(arp_src_ip, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
-                            sprintf(arp_dst_mac, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
-                            sprintf(arp_src_mac, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
+                            sprintf(ARPDSTIP, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
+                            sprintf(ARPSRCIP, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
+                            sprintf(ARPDSTMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+                            sprintf(ARPSRCMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
 
                             // Request
-                            if (strcmp(arp_buff, "Request") == 0) {
-                                printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_dst_ip, arp_dst_mac);
-                                printf("Zdrojova IP: %s, Cielova IP: %s", arp_src_ip, arp_dst_ip);
+                            if (strcmp(ARPBuff, "Request") == 0) {
+                                printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
+                                printf("Zdrojova IP: %s, Cielova IP: %s", ARPSRCIP, ARPDSTIP);
                             }
 
                             // Reply
                             else {
-                                printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertype_buff, arp_buff, arp_src_ip, arp_src_mac);
-                                printf("Zdrojova IP: %s, Cielova IP: %s", arp_src_ip, arp_dst_ip);
+                                printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
+                                printf("Zdrojova IP: %s, Cielova IP: %s", ARPSRCIP, ARPDSTIP);
                             }
 
-                            printf("%s\n", protocol_buff);
+                            printf("%s\n", protocolBuff);
 
                         }
 
                         // Je IP, pokracujeme, len ulozime aky ma protokol
                         else
-                            protocol_buff = get_protocol(packet, ip_protocols);
+                            protocolBuff = getProtocol(packet, IPProtocols);
 
                         // ramec cislo x, dlzky ramca
-                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
+                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
 
                         // Ethernet II
-                        printf("\n%s", frame_type);
+                        printf("\n%s", frameType);
 
                         // MAC adresy
-                        print_MAC_address(packet);
-                        printf("%s\n", ethertype_buff);
+                        printMACAddress(packet);
+                        printf("%s\n", ethertypeBuff);
 
                         // Je IP
-                        if (strcmp(ethertype_buff, "ARP") != 0)
-                            print_IP_adress(packet);
+                        if (strcmp(ethertypeBuff, "ARP") != 0)
+                            printIPAdresses(packet);
 
-                        printf("%s\n", protocol_buff);
+                        printf("%s\n", protocolBuff);
 
-                        char* src_ip_buff;
-                        src_ip_buff = get_src_ip(packet);
-                        if ((strcmp(ethertype_buff, "IPv4") == 0)  && search_in_ll(head, src_ip_buff) == false) {
-                            if (strcmp(protocol_buff, "TCP") == 0)
-                                insert_src_ip_to_ll(&head, get_src_ip(packet), true);
+                        char* srcIPBuff;
+                        srcIPBuff = getSrcIP(packet);
+                        if ((strcmp(ethertypeBuff, "IPv4") == 0) && findIPv4PacketInList(IPv4Head, srcIPBuff) == false) {
+                            if (strcmp(protocolBuff, "TCP") == 0)
+                                insertIPv4PacketToList(&IPv4Head, getSrcIP(packet), true);
                             else
-                                insert_src_ip_to_ll(&head, get_src_ip(packet), false);
+                                insertIPv4PacketToList(&IPv4Head, getSrcIP(packet), false);
                         }
 
-                        char* port_buff;
-                        if (strcmp(protocol_buff, "TCP") == 0) {
-                            port_buff = get_tcp_or_udp_port(packet, tcp_ports);
-                            printf("%s\n", port_buff);
-                            print_src_port_and_dst_port(packet);
+                        char* portBuff;
+                        if (strcmp(protocolBuff, "TCP") == 0) {
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                            printf("%s\n", portBuff);
+                            printSrcPortAndDstPort(packet);
                         }
 
-                        else if (strcmp(protocol_buff, "UDP") == 0) {
-                            port_buff = get_tcp_or_udp_port(packet, udp_ports);
-                            printf("%s\n", port_buff);
-                            print_src_port_and_dst_port(packet);
+                        else if (strcmp(protocolBuff, "UDP") == 0) {
+                            portBuff = getTCPOrUDPPort(packet, UDPPorts);
+                            printf("%s\n", portBuff);
+                            printSrcPortAndDstPort(packet);
                         }
 
-                        else if (strcmp(protocol_buff, "ICMP") == 0) {
-                            port_buff = get_icmp_port(packet, icmp_ports);
-                            printf("%s\n", port_buff);
-                            print_src_port_and_dst_port(packet);
+                        else if (strcmp(protocolBuff, "ICMP") == 0) {
+                            portBuff = getICMPPort(packet, ICMPPorts);
+                            printf("%s\n", portBuff);
+                            printSrcPortAndDstPort(packet);
                         }
                     }
 
-                    print_hexadecimal(pcap_header->len, packet);
+                    printHexadecimal(pcapHeader->len, packet);
                     printf("\n=============================================================\n");
 
                 }
                 printf("IP adresy vysielajucich uzlov:\n");
-                print_ll(head);
-                print_ip_with_the_most_packets_sent(head);
+                printIPv4PacketList(IPv4Head);
+                printIPWithTheMostPacketsSent(IPv4Head);
                 pcap_close(pcap_file);
-                delete_ll(&head);
+                deleteIPv4PacketList(&IPv4Head);
                 frames = 0;
                 break;
             }
@@ -721,9 +699,9 @@ int main() {
                 choice2[strlen(choice2) - 1] = '\0';
                 /* puts(choice2); */
 
-                int op_ethertype;
-                int op_protocol;
-                int op_port;
+                int ethertypeKey;
+                int protocolKey;
+                int portKey;
                 int count = 0;
 
                 int i, j, k;
@@ -731,48 +709,48 @@ int main() {
                     for (j = 0; j < 4; j++)
                         for (k = 0; k < 7; k++)
                             if (strcmp(choice2, (const char *) &categories[i][j][k][0]) == 0) {
-                                op_ethertype = i;
-                                op_protocol = j;
-                                op_port = k;
+                                ethertypeKey = i;
+                                protocolKey = j;
+                                portKey = k;
                             }
-                /* printf("%d %d %d\n", op_ethertype, op_protocol, op_port); */
+                /* printf("%d %d %d\n", ethertypeKey, protocolKey, portKey); */
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
-                    char* frame_type_buff = get_frame_type(packet);
-                    if (strcmp(frame_type_buff, "Ethernet II") == 0) {
+                    char* frameTypeBuff = getFrameType(packet);
+                    if (strcmp(frameTypeBuff, "Ethernet II") == 0) {
                         char* ethertype_buff;
-                        ethertype_buff = get_ether_type(packet, ethertypes);
-                        char* protocol_buff;
-                        protocol_buff = get_protocol(packet, ip_protocols);
-                        char* port_buff;
-                        if (op_protocol == 1)
-                            port_buff = get_tcp_or_udp_port(packet, tcp_ports);
-                        else if (op_protocol == 2)
-                            port_buff = get_tcp_or_udp_port(packet, udp_ports);
+                        ethertype_buff = getEtherType(packet, ethertypes);
+                        char* protocolBuff;
+                        protocolBuff = getProtocol(packet, IPProtocols);
+                        char* portBuff;
+                        if (protocolKey == 1)
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                        else if (protocolKey == 2)
+                            portBuff = getTCPOrUDPPort(packet, UDPPorts);
                         else
-                            port_buff = get_icmp_port(packet, icmp_ports);
+                            portBuff = getICMPPort(packet, ICMPPorts);
 
                         /*
                         printf("%d\n", frames);
                         printf("ethertype_buff: %s\n", ethertype_buff);
-                        printf("protocol_buff: %s\n", protocol_buff);
-                        printf("port_buff: %s\n", port_buff);
+                        printf("protocolBuff: %s\n", protocolBuff);
+                        printf("portBuff: %s\n", portBuff);
                         printf("choice2: %s\n", choice2);
-                        printf("&categories[op_ethertype][op_protocol][op_port]: %s\n", &categories[op_ethertype][op_protocol][op_port]);
+                        printf("&categories[ethertypeKey][protocolKey][portKey]: %s\n", &categories[ethertypeKey][protocolKey][portKey]);
                         */
 
                         // ak nasiel hladany protokol
-                        if (strcmp(port_buff, (const char *) &categories[op_ethertype][op_protocol][op_port]) == 0 || strcmp(protocol_buff, "ICMP") == 0 && strcmp(choice2, protocol_buff) == 0) {
-                            print_basic_info(frames, pcap_header->caplen, pcap_header->len);
-                            printf("\n%s", frame_type_buff);
-                            print_MAC_address(packet);
+                        if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 || strcmp(protocolBuff, "ICMP") == 0 && strcmp(choice2, protocolBuff) == 0) {
+                            printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                            printf("\n%s", frameTypeBuff);
+                            printMACAddress(packet);
                             printf("%s\n", ethertype_buff);
-                            print_IP_adress(packet);
-                            printf("%s\n", protocol_buff);
-                            printf("%s\n", port_buff);
-                            print_src_port_and_dst_port(packet);
-                            print_hexadecimal(pcap_header->len, packet);
+                            printIPAdresses(packet);
+                            printf("%s\n", protocolBuff);
+                            printf("%s\n", portBuff);
+                            printSrcPortAndDstPort(packet);
+                            printHexadecimal(pcapHeader->len, packet);
                             count++;
                             printf("\n=============================================================\n");
                         }
@@ -781,9 +759,9 @@ int main() {
                 printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
                 pcap_close(pcap_file);
                 frames = 0;
-                op_ethertype = 0;
-                op_protocol = 0;
-                op_port = 0;
+                ethertypeKey = 0;
+                protocolKey = 0;
+                portKey = 0;
                 break;
             }
 
@@ -797,107 +775,109 @@ int main() {
                 char choice2[20];
                 strcpy(choice2, "HTTP");
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
-                    char* port_buff;
-                    port_buff = get_tcp_or_udp_port(packet, tcp_ports);
+                    char* portBuff;
+                    portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                    if (strcmp(port_buff, "HTTP") == 0 && search_packet_in_ll(packet_head, frames) == false) {
-                        insert_packet_to_ll(&packet_head, get_src_port(packet), get_dst_port(packet), get_tcp_flag(packet), frames);
-                    }
+                    if (strcmp(portBuff, "HTTP") == 0 && findPacketInList(head, frames) == false)
+                        insertPacketToList(&head, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
+
                 }
 
-                struct packet *temp = packet_head;
-                struct packet *temp2 = temp;
-                struct packet *temp3 = temp2;
-                struct packet *temp4 = packet_head;
-                struct packet *temp5 = temp4;
-                struct packet *temp6 = temp5;
-                struct packet *temp7 = temp6;
+                struct Packet *temp = head;
+                struct Packet *temp2 = temp;
+                struct Packet *temp3 = temp2;
+                struct Packet *temp4 = head;
+                struct Packet *temp5 = temp4;
+                struct Packet *temp6 = temp5;
+                struct Packet *temp7 = temp6;
 
 
-                char *_1st_complete_com = "0";
-                int _1st_complete_com_start = 0;
-                int _1st_complete_com_end = 0;
+                char *firstCompleteCom = "0";
+                int firstCompleteComStart = 0;
+                int firstCompleteComEnd = 0;
 
-                char *_1st_incomplete_com;
-                int _1st_incomplete_com_start = 0;
+                char *firstIncompleteCom;
+                int firstIncompleteComStart = 0;
 
-                bool _complete_com_fullfilled = false;
-                bool _incomplete_com_fullfilled = false;
+                bool completeComFullfilled = false;
+                bool incompleteComFullfilled = false;
 
                 while (true) {
-                    if (_complete_com_fullfilled == true && _incomplete_com_fullfilled == true)
+                    if (completeComFullfilled == true && incompleteComFullfilled == true)
                         break;
-                    char *str1 = verify_3WHS(temp, temp2, temp3);
+                    char *str1 = verify3WHS(temp, temp2, temp3);
                     char* token1;
                     char* rest1 = str1;
-                    char *string_array1[3];
+                    char *stringArray1[3];
                     int x1 = 0;
                     while ((token1 = strtok_r(rest1, " ", &rest1)))
-                        string_array1[x1++] = token1;
-                    int temp_frame_number1 = atoi(string_array1[0]);
-                    char *temp_src_port1 = string_array1[1];
+                        stringArray1[x1++] = token1;
+                    int tempFrameNumber1 = atoi(stringArray1[0]);
+                    char *tempSrcPort1 = stringArray1[1];
                     printf("[New loop]\n");
-                    printf("%d %s\n", temp_frame_number1, temp_src_port1);
+                    printf("%d %s\n", tempFrameNumber1, tempSrcPort1);
 
                     // 3WHS Success, looking for complete com
-                    if (strcmp(temp_src_port1, "0") && _complete_com_fullfilled == false) {
-                        char *str2 = verify_termination(temp4, temp5, temp6, temp7, temp_frame_number1, temp_src_port1);
+                    if (strcmp(tempSrcPort1, "0") && completeComFullfilled == false) {
+                        char *str2 = verifyTerminationOld(temp4, temp5, temp6, temp7, tempFrameNumber1,
+                                                          tempSrcPort1);
                         char* token2;
                         char* rest2 = str2;
-                        char *string_array2[3];
+                        char *stringArray2[3];
                         int x2 = 0;
                         while ((token2 = strtok_r(rest2, " ", &rest2)))
-                            string_array2[x2++] = token2;
-                        int temp_frame_number2 = atoi(string_array2[0]);
-                        char *temp_src_port2 = string_array2[1];
+                            stringArray2[x2++] = token2;
+                        int tempFrameNumber2 = atoi(stringArray2[0]);
+                        char *tempSrcPort2 = stringArray2[1];
                         printf("[3WHS Success, complete com not yet fullfilled]\n");
-                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
+                        printf("%d %s\n", tempFrameNumber2, tempSrcPort2);
 
                         // 4WHS Success aka complete com
-                        if (strcmp(temp_src_port2, "0")) {
-                            _complete_com_fullfilled = true;
-                            _1st_complete_com = temp_src_port1;
-                            _1st_complete_com_start = temp_frame_number1;
-                            _1st_complete_com_end = temp_frame_number2;
+                        if (strcmp(tempSrcPort2, "0")) {
+                            completeComFullfilled = true;
+                            firstCompleteCom = tempSrcPort1;
+                            firstCompleteComStart = tempFrameNumber1;
+                            firstCompleteComEnd = tempFrameNumber2;
                             printf("[4WHS Success, first complete com]\n");
-                            printf("1st COMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            printf("1st COMPLETE com = start: %d %s end: %d %s\n", tempFrameNumber1, tempSrcPort1, tempFrameNumber2, tempSrcPort2);
                             continue;
                         }
 
                         // 4WHS Fail at the first itaration
-                        else if (strcmp(temp_src_port2, "0") == 0 && _incomplete_com_fullfilled == false) {
-                            _1st_incomplete_com = temp_src_port1;
-                            _1st_incomplete_com_start = temp_frame_number1;
-                            _incomplete_com_fullfilled = true;
+                        else if (strcmp(tempSrcPort2, "0") == 0 && incompleteComFullfilled == false) {
+                            firstIncompleteCom = tempSrcPort1;
+                            firstIncompleteComStart = tempFrameNumber1;
+                            incompleteComFullfilled = true;
                             printf("[4WHS Fail, incomplete com fullfilled, first loop]\n");
-                            printf("1st INCOMPLETE com = start: %d %s end: %d %s (first iteration)\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            printf("1st INCOMPLETE com = start: %d %s end: %d %s (first iteration)\n", tempFrameNumber1, tempSrcPort1, tempFrameNumber2, tempSrcPort2);
                             continue;
                         }
                     }
 
                     // 3WHS Success, looking for incomplete com
-                    else if (strcmp(temp_src_port1, "0") && _complete_com_fullfilled == true) {
-                        char *str2 = verify_termination(temp4, temp5, temp6, temp7, temp_frame_number1, temp_src_port1);
+                    else if (strcmp(tempSrcPort1, "0") && completeComFullfilled == true) {
+                        char *str2 = verifyTerminationOld(temp4, temp5, temp6, temp7, tempFrameNumber1,
+                                                          tempSrcPort1);
                         char* token2;
                         char* rest2 = str2;
-                        char *string_array2[3];
+                        char *stringArray2[3];
                         int x2 = 0;
                         while ((token2 = strtok_r(rest2, " ", &rest2)))
-                            string_array2[x2++] = token2;
+                            stringArray2[x2++] = token2;
 
-                        int temp_frame_number2 = atoi(string_array2[0]);
-                        char *temp_src_port2 = string_array2[1];
+                        int tempFrameNumber2 = atoi(stringArray2[0]);
+                        char *tempSrcPort2 = stringArray2[1];
                         printf("[3WHS Success, complete com fullfilled]\n");
-                        printf("%d %s\n", temp_frame_number2, temp_src_port2);
+                        printf("%d %s\n", tempFrameNumber2, tempSrcPort2);
 
-                        if (strcmp(temp_src_port2, "0") == 0) {
-                            _incomplete_com_fullfilled = true;
-                            _1st_incomplete_com = temp_src_port1;
-                            _1st_incomplete_com_start = temp_frame_number1;
+                        if (strcmp(tempSrcPort2, "0") == 0) {
+                            incompleteComFullfilled = true;
+                            firstIncompleteCom = tempSrcPort1;
+                            firstIncompleteComStart = tempFrameNumber1;
                             printf("[4WHS Fail, incomplete com fullfilled]\n");
-                            printf("1st INCOMPLETE com = start: %d %s end: %d %s\n", temp_frame_number1, temp_src_port1, temp_frame_number2, temp_src_port2);
+                            printf("1st INCOMPLETE com = start: %d %s end: %d %s\n", tempFrameNumber1, tempSrcPort1, tempFrameNumber2, tempSrcPort2);
                             break;
                         }
                     }
@@ -916,39 +896,39 @@ int main() {
                     exit(0);
                 }
 
-                if (_1st_complete_com_start != 0 && _1st_complete_com_end != 0) {
+                if (firstCompleteComStart != 0 && firstCompleteComEnd != 0) {
                     printf("\n=============================================================\n");
-                    printf("Prva kompletna komunikacia - ramce od %d do %d", _1st_complete_com_start,
-                           _1st_complete_com_end);
+                    printf("Prva kompletna komunikacia - ramce od %d do %d", firstCompleteComStart,
+                           firstCompleteComEnd);
                     printf("\n=============================================================\n");
                 }
 
-                else if (_1st_complete_com_start == 0 && _1st_complete_com_end == 0) {
+                else if (firstCompleteComStart == 0 && firstCompleteComEnd == 0) {
                     printf("\n=============================================================\n");
                     printf("Subor neobsahoval ani jednu kompletnu komunikaciu");
                     printf("\n=============================================================\n");
                 }
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
-                    char* frame_type_buff = get_frame_type(packet);
-                    char* ethertype_buff;
-                    ethertype_buff = get_ether_type(packet, ethertypes);
-                    char* protocol_buff;
-                    protocol_buff = get_protocol(packet, ip_protocols);
-                    char* port_buff;
-                    port_buff = get_tcp_or_udp_port(packet, tcp_ports);
+                    char* frameTypeBuff = getFrameType(packet);
+                    char* ethertypeBuff;
+                    ethertypeBuff = getEtherType(packet, ethertypes);
+                    char* protocolBuff;
+                    protocolBuff = getProtocol(packet, IPProtocols);
+                    char* portBuff;
+                    portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                    if (strcmp(port_buff, "HTTP") == 0 && (strcmp(get_src_port(packet), _1st_complete_com) == 0 || strcmp(get_dst_port(packet), _1st_complete_com) == 0)) {
-                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
-                        printf("\n%s", frame_type_buff);
-                        print_MAC_address(packet);
-                        printf("%s\n", ethertype_buff);
-                        print_IP_adress(packet);
-                        printf("%s\n", protocol_buff);
-                        printf("%s\n", port_buff);
-                        print_src_port_and_dst_port(packet);
-                        print_hexadecimal(pcap_header->len, packet);
+                    if (strcmp(portBuff, "HTTP") == 0 && (strcmp(getSrcPort(packet), firstCompleteCom) == 0 || strcmp(getDstPort(packet), firstCompleteCom) == 0)) {
+                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                        printf("\n%s", frameTypeBuff);
+                        printMACAddress(packet);
+                        printf("%s\n", ethertypeBuff);
+                        printIPAdresses(packet);
+                        printf("%s\n", protocolBuff);
+                        printf("%s\n", portBuff);
+                        printSrcPortAndDstPort(packet);
+                        printHexadecimal(pcapHeader->len, packet);
                         printf("\n=============================================================\n");
                     }
                 }
@@ -961,41 +941,42 @@ int main() {
                     exit(0);
                 }
 
-                if (_1st_incomplete_com_start != 0) {
-                    printf("Prva nekompletna komunikacia - ramec %d", _1st_incomplete_com_start);
+                if (firstIncompleteComStart != 0) {
+                    printf("Prva nekompletna komunikacia - ramec %d", firstIncompleteComStart);
                     printf("\n=============================================================\n");
                 }
 
-                else if (_1st_incomplete_com_start == 0) {
+                else {
                     printf("Subor neobsahoval ani jednu nekompletnu komunikaciu");
                     printf("\n=============================================================\n");
                 }
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
-                    char* frame_type_buff = get_frame_type(packet);
-                    char* ethertype_buff;
-                    ethertype_buff = get_ether_type(packet, ethertypes);
-                    char* protocol_buff;
-                    protocol_buff = get_protocol(packet, ip_protocols);
-                    char* port_buff;
-                    port_buff = get_tcp_or_udp_port(packet, tcp_ports);
+                    char* frameTypeBuff = getFrameType(packet);
+                    char* ethertypeBuff;
+                    ethertypeBuff = getEtherType(packet, ethertypes);
+                    char* protocolBuff;
+                    protocolBuff = getProtocol(packet, IPProtocols);
+                    char* portBuff;
+                    portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                    if (strcmp(get_src_port(packet), _1st_incomplete_com) == 0 || strcmp(get_dst_port(packet), _1st_incomplete_com) == 0) {
-                        print_basic_info(frames, pcap_header->caplen, pcap_header->len);
-                        printf("\n%s", frame_type_buff);
-                        print_MAC_address(packet);
-                        printf("%s\n", ethertype_buff);
-                        print_IP_adress(packet);
-                        printf("%s\n", protocol_buff);
-                        printf("%s\n", port_buff);
-                        print_src_port_and_dst_port(packet);
-                        print_hexadecimal(pcap_header->len, packet);
+                    if (strcmp(getSrcPort(packet), firstIncompleteCom) == 0 || strcmp(getDstPort(packet), firstIncompleteCom) == 0) {
+                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                        printf("\n%s", frameTypeBuff);
+                        printMACAddress(packet);
+                        printf("%s\n", ethertypeBuff);
+                        printIPAdresses(packet);
+                        printf("%s\n", protocolBuff);
+                        printf("%s\n", portBuff);
+                        printSrcPortAndDstPort(packet);
+                        printHexadecimal(pcapHeader->len, packet);
                         printf("\n=============================================================\n");
                     }
                 }
 
                 pcap_close(pcap_file);
+                deletePacketList(&head);
                 frames = 0;
                 break;
             }
@@ -1007,5 +988,3 @@ int main() {
 
     return 0;
 }
-
-

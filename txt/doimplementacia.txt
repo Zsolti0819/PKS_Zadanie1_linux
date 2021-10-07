@@ -9,22 +9,22 @@
                 }
 
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcap_header, &Packet)) >= 0) {
                     frames++;
-                    char* frame_type = get_frame_type(packet);
+                    char* frame_type = get_frame_type(Packet);
                     if (strcmp(frame_type, "802.3") == 0) {
                         char* sap_buff;
-                        sap_buff = get_802_3_value(packet, sap_file);
+                        sap_buff = get802_3Value(Packet, sap_file);
 
                         if (strcmp(sap_buff, "STP") == 0) {
-                            print_basic_info(frames, pcap_header->caplen, pcap_header->len, output);
-                            // printf("\n%s", get_frame_type(packet));
-                            fprintf(stdout, "\n%s", get_frame_type(packet));
-                            fprintf(output, "\n%s", get_frame_type(packet));
-                            print_MAC_address(packet, output);
-                            print_IP_adress(packet, output);
-                            print_src_port_and_dst_port(packet, output);
-                            print_hexadecimal(pcap_header->len, packet, output);
+                            printBasicInfo(frames, pcap_header->caplen, pcap_header->len, output);
+                            // printf("\n%s", get_frame_type(Packet));
+                            fprintf(stdout, "\n%s", get_frame_type(Packet));
+                            fprintf(output, "\n%s", getFrameType(Packet));
+                            printMACAddress(Packet, output);
+                            printIPAdresses(Packet, output);
+                            printSrcPortAndDstPort(Packet, output);
+                            printHexadecimal(pcap_header->len, Packet, output);
                             count++;
                             // printf("\n=======================================================================\n\n");
                             fprintf(stdout, "\n=======================================================================\n\n");
