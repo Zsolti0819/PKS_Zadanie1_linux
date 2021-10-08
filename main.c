@@ -60,11 +60,11 @@ void deletePacketList(struct Packet** headRef) {
 }
 
 void printPacket(struct Packet *node) {
+    printf("~~~~~~~~~~\n");
     printf("%s\n", node->flag);
     printf("%d\n", node->frameNumber);
     printf("%s\n", node->srcPort);
     printf("%s\n", node->dstPort);
-    printf("\n=============================================================\n");
 }
 
 struct IPv4Packet {
@@ -446,6 +446,12 @@ void fillCategoriesMDA() {
     strcpy((char *) &categories[2][0][0][0], "ARP");
 }
 
+
+/*
+ * temp = client
+ * temp2= server
+ * temp3 = client
+ * */
 char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp3) {
     while (temp != NULL) {
         if (strcmp(temp -> flag, "SYN") == 0 && temp -> isMarked == false) {
@@ -457,9 +463,9 @@ char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp
                             temp2 -> isMarked = true;
                             temp3 -> isMarked = true;
 
-//                            printPacket(temp);
-//                            printPacket(temp2);
-//                            printPacket(temp3);
+                            printPacket(temp);
+                            printPacket(temp2);
+                            printPacket(temp3);
 
                             char *_3WHSSYN = malloc(sizeof(u_char) * 20);
                             sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> srcPort);
@@ -478,34 +484,24 @@ char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp
     return no3WHS;
 }
 
-char * verifyTerminationOld(struct Packet *temp4, struct Packet *temp5, struct Packet *temp6, struct Packet *temp7, int temp_frame_number, const char *temp_src_port) {
+/*
+ * temp4 = server
+ * temp5 = client
+ * */
+
+char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStart, const char *clientsSourcePort) {
     while (temp4 != NULL) {
-        if (temp_frame_number < temp4->frameNumber && temp4->isMarked == false && strcmp(temp_src_port, temp4->dstPort) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
+        if (comStart < temp4 -> frameNumber && temp4 -> isMarked == false && (strcmp(clientsSourcePort, temp4->dstPort) == 0 || strcmp(clientsSourcePort, temp4->srcPort) == 0 ) && strcmp(temp4->flag, "FIN, ACK") == 0) {
             while (temp5 != NULL) {
-                if (temp4->frameNumber < temp5->frameNumber && temp4->isMarked == false && temp5->isMarked == false && strcmp(temp4->dstPort, temp5->srcPort) == 0 && strcmp(temp5->flag, "ACK") == 0) {
-                    while (temp6 != NULL) {
-                        if (temp5->frameNumber < temp6->frameNumber && temp4->isMarked == false && temp5->isMarked == false && temp6->isMarked == false && strcmp(temp5->srcPort, temp6->srcPort) == 0 && strcmp(temp5->dstPort, temp6->dstPort) == 0 && strcmp(temp6->flag, "FIN, ACK") == 0) {
-                            while (temp7 != NULL) {
-                                if (temp6->frameNumber < temp7->frameNumber && temp4->isMarked == false && temp5->isMarked == false && temp6->isMarked == false && temp7->isMarked == false && strcmp(temp6->srcPort, temp7->dstPort) == 0 && strcmp(temp6->dstPort, temp7->srcPort) == 0 && strcmp(temp7->flag, "ACK") == 0) {
-                                    temp4 -> isMarked = true;
-                                    temp5 -> isMarked = true;
-                                    temp6 -> isMarked = true;
-                                    temp7 -> isMarked = true;
+                if (temp4->frameNumber < temp5->frameNumber && temp4->isMarked == false && temp5->isMarked == false && (strcmp(clientsSourcePort, temp5->dstPort) == 0 || strcmp(clientsSourcePort, temp5->srcPort) == 0) && strcmp(temp5->flag, "FIN, ACK") == 0) {
+                    temp4 -> isMarked = true;
+                    temp5 -> isMarked = true;
+                    printPacket(temp4);
+                    printPacket(temp5);
 
-//                                    printPacket(temp4);
-//                                    printPacket(temp5);
-//                                    printPacket(temp6);
-//                                    printPacket(temp7);
-
-                                    char *_4WHSFIN = malloc(sizeof(u_char) * 20);
-                                    sprintf(_4WHSFIN, "%d %s", temp7 -> frameNumber, temp7 -> dstPort);
-                                    return _4WHSFIN;
-                                }
-                                temp7 = temp7->next;
-                            }
-                        }
-                        temp6 = temp6->next;
-                    }
+                    char *_4WHSFIN = malloc(sizeof(u_char) * 20);
+                    sprintf(_4WHSFIN, "%d", temp5 -> frameNumber);
+                    return _4WHSFIN;
                 }
                 temp5 = temp5->next;
             }
@@ -513,7 +509,7 @@ char * verifyTerminationOld(struct Packet *temp4, struct Packet *temp5, struct P
         temp4 = temp4->next;
     }
     char *no4WHS = malloc(sizeof(u_char) * 20);
-    strcpy(no4WHS, "0 0");
+    strcpy(no4WHS, "0");
     return no4WHS;
 }
 
@@ -790,13 +786,9 @@ int main() {
                 struct Packet *temp3 = temp2;
                 struct Packet *temp4 = head;
                 struct Packet *temp5 = temp4;
-                struct Packet *temp6 = temp5;
-                struct Packet *temp7 = temp6;
-
 
                 char *firstCompleteCom = "0";
                 int firstCompleteComStart = 0;
-                int firstCompleteComEnd = 0;
 
                 char *firstIncompleteCom;
                 int firstIncompleteComStart = 0;
@@ -807,6 +799,7 @@ int main() {
                 while (true) {
                     if (completeComFullfilled == true && incompleteComFullfilled == true)
                         break;
+
                     char *str1 = verify3WHS(temp, temp2, temp3);
                     char* token1;
                     char* rest1 = str1;
@@ -816,74 +809,57 @@ int main() {
                         stringArray1[x1++] = token1;
                     int tempFrameNumber1 = atoi(stringArray1[0]);
                     char *tempSrcPort1 = stringArray1[1];
+                    printf("~~~~~~~~~~\n");
                     printf("[New loop]\n");
-                    printf("%d %s\n", tempFrameNumber1, tempSrcPort1);
+                    printf("SYN start: %d Port: %s\n", tempFrameNumber1, tempSrcPort1);
 
                     // 3WHS Success, looking for complete com
                     if (strcmp(tempSrcPort1, "0") && completeComFullfilled == false) {
-                        char *str2 = verifyTerminationOld(temp4, temp5, temp6, temp7, tempFrameNumber1,
-                                                          tempSrcPort1);
-                        char* token2;
-                        char* rest2 = str2;
-                        char *stringArray2[3];
-                        int x2 = 0;
-                        while ((token2 = strtok_r(rest2, " ", &rest2)))
-                            stringArray2[x2++] = token2;
-                        int tempFrameNumber2 = atoi(stringArray2[0]);
-                        char *tempSrcPort2 = stringArray2[1];
                         printf("[3WHS Success, complete com not yet fullfilled]\n");
-                        printf("%d %s\n", tempFrameNumber2, tempSrcPort2);
+                        char *potentional2ndFIN = verifyTermination(temp4, temp5, tempFrameNumber1, tempSrcPort1);
+                        printf("2nd FIN: %s\n", potentional2ndFIN);
+                        printf("~~~~~~~~~~\n");
 
                         // 4WHS Success aka complete com
-                        if (strcmp(tempSrcPort2, "0")) {
+                        if (strcmp(potentional2ndFIN, "0")) {
                             completeComFullfilled = true;
                             firstCompleteCom = tempSrcPort1;
                             firstCompleteComStart = tempFrameNumber1;
-                            firstCompleteComEnd = tempFrameNumber2;
                             printf("[4WHS Success, first complete com]\n");
-                            printf("1st COMPLETE com = start: %d %s end: %d %s\n", tempFrameNumber1, tempSrcPort1, tempFrameNumber2, tempSrcPort2);
+                            printf("1st COMPLETE com [ %s ] = SYN start: %d\t2nd FIN: %s\n", tempSrcPort1, tempFrameNumber1, potentional2ndFIN);
                             continue;
                         }
 
                         // 4WHS Fail at the first itaration
-                        else if (strcmp(tempSrcPort2, "0") == 0 && incompleteComFullfilled == false) {
+                        else if (strcmp(potentional2ndFIN, "0") == 0 && incompleteComFullfilled == false) {
                             firstIncompleteCom = tempSrcPort1;
                             firstIncompleteComStart = tempFrameNumber1;
                             incompleteComFullfilled = true;
                             printf("[4WHS Fail, incomplete com fullfilled, first loop]\n");
-                            printf("1st INCOMPLETE com = start: %d %s end: %d %s (first iteration)\n", tempFrameNumber1, tempSrcPort1, tempFrameNumber2, tempSrcPort2);
+                            printf("1st INCOMPLETE com [ %s ] = SYN start: %d\t2nd FIN: %s\n", tempSrcPort1, tempFrameNumber1, potentional2ndFIN);
                             continue;
                         }
                     }
 
                     // 3WHS Success, looking for incomplete com
                     else if (strcmp(tempSrcPort1, "0") && completeComFullfilled == true) {
-                        char *str2 = verifyTerminationOld(temp4, temp5, temp6, temp7, tempFrameNumber1,
-                                                          tempSrcPort1);
-                        char* token2;
-                        char* rest2 = str2;
-                        char *stringArray2[3];
-                        int x2 = 0;
-                        while ((token2 = strtok_r(rest2, " ", &rest2)))
-                            stringArray2[x2++] = token2;
+                        printf("\n[3WHS Success, complete com fullfilled]\n");
+                        char *potentional2ndFIN = verifyTermination(temp4, temp5, tempFrameNumber1, tempSrcPort1);
+                        printf("2nd FIN: %s\n", potentional2ndFIN);
+                        printf("~~~~~~~~~~\n");
 
-                        int tempFrameNumber2 = atoi(stringArray2[0]);
-                        char *tempSrcPort2 = stringArray2[1];
-                        printf("[3WHS Success, complete com fullfilled]\n");
-                        printf("%d %s\n", tempFrameNumber2, tempSrcPort2);
-
-                        if (strcmp(tempSrcPort2, "0") == 0) {
+                        if (strcmp(potentional2ndFIN, "0") == 0) {
                             incompleteComFullfilled = true;
                             firstIncompleteCom = tempSrcPort1;
                             firstIncompleteComStart = tempFrameNumber1;
                             printf("[4WHS Fail, incomplete com fullfilled]\n");
-                            printf("1st INCOMPLETE com = start: %d %s end: %d %s\n", tempFrameNumber1, tempSrcPort1, tempFrameNumber2, tempSrcPort2);
+                            printf("1st INCOMPLETE com [ %s ] = SYN start: %d\t2nd FIN: %s\n", tempSrcPort1, tempFrameNumber1, potentional2ndFIN);
                             break;
                         }
                     }
                     // 3WHS Fail
-                    else{
-                        printf("[3WHS Fail, no complete com found]\n");
+                    else {
+                        printf("\n[3WHS Fail, no complete com found]\n");
                         break;
                     }
                 }
@@ -896,14 +872,13 @@ int main() {
                     exit(0);
                 }
 
-                if (firstCompleteComStart != 0 && firstCompleteComEnd != 0) {
+                if (firstCompleteComStart != 0) {
                     printf("\n=============================================================\n");
-                    printf("Prva kompletna komunikacia - ramce od %d do %d", firstCompleteComStart,
-                           firstCompleteComEnd);
+                    printf("Prva kompletna komunikacia [ %s ]", firstCompleteCom);
                     printf("\n=============================================================\n");
                 }
 
-                else if (firstCompleteComStart == 0 && firstCompleteComEnd == 0) {
+                else {
                     printf("\n=============================================================\n");
                     printf("Subor neobsahoval ani jednu kompletnu komunikaciu");
                     printf("\n=============================================================\n");
@@ -942,7 +917,7 @@ int main() {
                 }
 
                 if (firstIncompleteComStart != 0) {
-                    printf("Prva nekompletna komunikacia - ramec %d", firstIncompleteComStart);
+                    printf("Prva nekompletna komunikacia [ %s ]", firstIncompleteCom);
                     printf("\n=============================================================\n");
                 }
 
