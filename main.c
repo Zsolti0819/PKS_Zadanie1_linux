@@ -461,7 +461,10 @@ char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp
                             printPacket(temp3);
 
                             char *_3WHSSYN = malloc(sizeof(u_char) * 20);
-                            sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> srcPort);
+                            if (strcmp(temp -> srcPort, "20") == 0 || strcmp(temp -> srcPort, "21") == 0 || strcmp(temp -> srcPort, "22") == 0 || strcmp(temp -> srcPort, "23") == 0 || strcmp(temp -> srcPort, "80") == 0 || strcmp(temp -> srcPort, "443") == 0 || strcmp(temp -> srcPort, "69") == 0)
+                                sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> dstPort);
+                            else
+                                sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> srcPort);
                             return _3WHSSYN;
                         }
                         temp3 = temp3 -> next;
@@ -482,7 +485,6 @@ char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStar
         if (comStart < temp4 -> frameNumber && temp4 -> isMarked == false && (strcmp(clientsSourcePort, temp4->dstPort) == 0 || strcmp(clientsSourcePort, temp4->srcPort) == 0 ) && strcmp(temp4->flag, "FIN") == 0) {
 
             if (strcmp(clientsSourcePort, temp4->dstPort) == 0) {
-                printf("FIN was sent by the server\n");
                 while (temp5 != NULL) {
                     if (temp4->frameNumber < temp5->frameNumber && temp4->isMarked == false && temp5->isMarked == false && strcmp(clientsSourcePort, temp5->srcPort) == 0 && (strcmp(temp5->flag, "FIN") == 0 || strcmp(temp5->flag, "RST") == 0)) {
                         temp4 -> isMarked = true;
@@ -500,7 +502,6 @@ char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStar
             }
 
             else if (strcmp(clientsSourcePort, temp4->srcPort) == 0) {
-                printf("FIN was sent by the client\n");
                 while (temp5 != NULL) {
                     if (temp4->frameNumber < temp5->frameNumber && temp4->isMarked == false && temp5->isMarked == false && strcmp(clientsSourcePort, temp5->dstPort) == 0  && (strcmp(temp5->flag, "FIN") == 0 || strcmp(temp5->flag, "RST") == 0)) {
                         temp4 -> isMarked = true;
@@ -533,7 +534,7 @@ char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStar
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/eth-4.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/eth-7.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -784,7 +785,7 @@ int main() {
                 choice2[strlen(choice2) - 1] = '\0';
 //                puts(choice2);
 
-                if (strcasecmp(choice2, "HTTP") == 0 || strcasecmp(choice2, "HTTPS") == 0 || strcasecmp(choice2, "TELNET") == 0 || strcasecmp(choice2, "FTP CONTROL") == 0 || strcasecmp(choice2, "FTP DATA") == 0) {
+                if (strcasecmp(choice2, "HTTP") == 0 || strcasecmp(choice2, "HTTPS") == 0 || strcasecmp(choice2, "TELNET") == 0 || strcasecmp(choice2, "FTP CONTROL") == 0 || strcasecmp(choice2, "FTP DATA") == 0 || strcasecmp(choice2, "SSH") == 0) {
                     int ethertypeKey;
                     int protocolKey;
                     int portKey;
