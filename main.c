@@ -6,17 +6,17 @@
 
 char**** categories[3][4][7][10];
 
-struct Packet {
+struct TCPPacket {
     int frameNumber;
     char* srcPort;
     char* dstPort;
     char* flag;
     bool isMarked;
-    struct Packet* next;
+    struct TCPPacket* next;
 };
 
-bool findPacketInList(struct Packet* head, int frameNumber) {
-    struct Packet* temp = head;
+bool findTCPPacketInList(struct TCPPacket* head, int frameNumber) {
+    struct TCPPacket* temp = head;
     while (temp != NULL) {
         if (temp->frameNumber == frameNumber)
             return true;
@@ -26,9 +26,9 @@ bool findPacketInList(struct Packet* head, int frameNumber) {
     return false;
 }
 
-void insertPacketToList(struct Packet **headRef, char *srcPort, char *dstPort, char *flag, int frameNumber) {
-    struct Packet* newNode = malloc(sizeof(struct Packet));
-    struct Packet* last = *headRef;
+void insertTCPPacketToList(struct TCPPacket **headRef, char *srcPort, char *dstPort, char *flag, int frameNumber) {
+    struct TCPPacket* newNode = malloc(sizeof(struct TCPPacket));
+    struct TCPPacket* last = *headRef;
     newNode->srcPort = srcPort;
     newNode->dstPort = dstPort;
     newNode->flag = flag;
@@ -47,9 +47,9 @@ void insertPacketToList(struct Packet **headRef, char *srcPort, char *dstPort, c
     last->next = newNode;
 }
 
-void deletePacketList(struct Packet** headRef) {
-    struct Packet* temp = *headRef;
-    struct Packet* next;
+void deleteTCPPacketList(struct TCPPacket** headRef) {
+    struct TCPPacket* temp = *headRef;
+    struct TCPPacket* next;
 
     while (temp != NULL) {
         next = temp->next;
@@ -59,12 +59,65 @@ void deletePacketList(struct Packet** headRef) {
     *headRef = NULL;
 }
 
-void printPacket(struct Packet *node) {
+void printTCPPacket(struct TCPPacket *node) {
     printf("~~~~~~~~~~\n");
     printf("%s\n", node->flag);
     printf("FRAME: %d\n", node->frameNumber);
     printf("SRC: %s\n", node->srcPort);
     printf("DST: %s\n", node->dstPort);
+}
+
+struct UDPPacket {
+    int frameNumber;
+    char* srcPort;
+    char* dstPort;
+    char* opCode;
+    bool isMarked;
+    struct UDPPacket* next;
+};
+
+bool findUDPPacketInList(struct UDPPacket* head, int frameNumber) {
+    struct UDPPacket* temp = head;
+    while (temp != NULL) {
+        if (temp->frameNumber == frameNumber)
+            return true;
+
+        temp = temp->next;
+    }
+    return false;
+}
+
+void insertUDPPacketToList(struct UDPPacket **headRef, char *srcPort, char *dstPort, char *opCode, int frameNumber) {
+    struct UDPPacket* newNode = malloc(sizeof(struct UDPPacket));
+    struct UDPPacket* last = *headRef;
+    newNode->srcPort = srcPort;
+    newNode->dstPort = dstPort;
+    newNode->opCode = opCode;
+    newNode->frameNumber = frameNumber;
+    newNode->isMarked = false;
+    newNode->next = NULL;
+
+    if (*headRef == NULL) {
+        *headRef = newNode;
+        return;
+    }
+
+    while (last->next != NULL)
+        last = last->next;
+
+    last->next = newNode;
+}
+
+void deleteUDPPacketList(struct UDPPacket** headRef) {
+    struct UDPPacket* temp = *headRef;
+    struct UDPPacket* next;
+
+    while (temp != NULL) {
+        next = temp->next;
+        free(temp);
+        temp = next;
+    }
+    *headRef = NULL;
 }
 
 struct IPv4Packet {
@@ -146,7 +199,7 @@ void printMenu() {
     printf("0 - Koniec\n");
     printf("1 - Vypis vsetkych komunikacii\n");
     printf("2 - Filter ramcov (viacere moznosti)\n");
-    printf("3 - HTTP komunikacie\n");
+    printf("3 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
     printf("=============================================================\n");
 }
 
@@ -412,6 +465,20 @@ char* getTCPFlag(const u_char* packet) {
     return "NULL";
 }
 
+char* getTFTPOpcode(const u_char* packet) {
+    if (packet[43] == 0x001)
+        return "Read Request";
+    if (packet[43] == 0x002)
+        return "Write Request";
+    if (packet[43] == 0x003)
+        return "Data Packet";
+    if (packet[43] == 0x004)
+        return "Acknowledgement";
+    return "NULL";
+}
+
+
+
 void openTxtFiles(FILE **_802_3, FILE **ethertypes, FILE **IPProtocols, FILE **TCPPorts, FILE **UDPPorts, FILE **ICMPPorts, FILE **ARPOperation, FILE **SAPFile) {
     if (((*_802_3) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3.txt suboru.\n");
     if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
@@ -444,8 +511,7 @@ void fillCategoriesMDA() {
     strcpy((char *) &categories[2][0][0][0], "ARP");
 }
 
-// temp = client, temp2 = server, temp3 = client
-char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp3) {
+char * verify3WHS(struct TCPPacket *temp, struct TCPPacket *temp2, struct TCPPacket *temp3) {
     while (temp != NULL) {
         if (strcmp(temp -> flag, "SYN") == 0 && temp -> isMarked == false) {
             while (temp2 != NULL) {
@@ -456,9 +522,9 @@ char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp
                             temp2 -> isMarked = true;
                             temp3 -> isMarked = true;
 
-                            printPacket(temp);
-                            printPacket(temp2);
-                            printPacket(temp3);
+                            printTCPPacket(temp);
+                            printTCPPacket(temp2);
+                            printTCPPacket(temp3);
 
                             char *_3WHSSYN = malloc(sizeof(u_char) * 20);
                             if (strcmp(temp -> srcPort, "20") == 0 || strcmp(temp -> srcPort, "21") == 0 || strcmp(temp -> srcPort, "22") == 0 || strcmp(temp -> srcPort, "23") == 0 || strcmp(temp -> srcPort, "80") == 0 || strcmp(temp -> srcPort, "443") == 0 || strcmp(temp -> srcPort, "69") == 0)
@@ -480,7 +546,7 @@ char * verify3WHS(struct Packet *temp, struct Packet *temp2, struct Packet *temp
     return no3WHS;
 }
 
-char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStart, const char *clientsSourcePort) {
+char * verifyTermination(struct TCPPacket *temp4, struct TCPPacket *temp5, int comStart, const char *clientsSourcePort) {
     while (temp4 != NULL) {
         if (comStart < temp4 -> frameNumber && temp4 -> isMarked == false && (strcmp(clientsSourcePort, temp4->dstPort) == 0 || strcmp(clientsSourcePort, temp4->srcPort) == 0 ) && strcmp(temp4->flag, "FIN") == 0) {
 
@@ -490,8 +556,8 @@ char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStar
                         temp4 -> isMarked = true;
                         temp5 -> isMarked = true;
 
-                        printPacket(temp4);
-                        printPacket(temp5);
+                        printTCPPacket(temp4);
+                        printTCPPacket(temp5);
 
                         char *FINbyServer = malloc(sizeof(u_char) * 20);
                         sprintf(FINbyServer, "%d", temp5 -> frameNumber);
@@ -507,8 +573,8 @@ char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStar
                         temp4 -> isMarked = true;
                         temp5 -> isMarked = true;
 
-                        printPacket(temp4);
-                        printPacket(temp5);
+                        printTCPPacket(temp4);
+                        printTCPPacket(temp5);
 
                         char *FINbyClient = malloc(sizeof(u_char) * 20);
                         sprintf(FINbyClient, "%d", temp5 -> frameNumber);
@@ -534,7 +600,7 @@ char * verifyTermination(struct Packet *temp4, struct Packet *temp5, int comStar
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/eth-7.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/eth-9.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -552,7 +618,8 @@ int main() {
     struct pcap_pkthdr* pcapHeader;
     const u_char* packet;
     struct IPv4Packet* IPv4Head = NULL;
-    struct Packet* head = NULL;
+    struct TCPPacket* TCPhead = NULL;
+    struct UDPPacket* UDPhead = NULL;
     int frames = 0;
     int choice;
 
@@ -775,6 +842,9 @@ int main() {
 
             case 3: {
 
+                printf("Zadajte protokol. Moznosti su:\n\nHTTP\nHTTPS\nTELNET\nSSH\nFTP CONTROL\nFTP DATA\nTFTP\n");
+                printf("\n=============================================================\n");
+
                 if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
                     printf("Chyba pri otvoreni PCAP suboru.");
                     exit(0);
@@ -785,7 +855,7 @@ int main() {
                 choice2[strlen(choice2) - 1] = '\0';
 //                puts(choice2);
 
-                if (strcasecmp(choice2, "HTTP") == 0 || strcasecmp(choice2, "HTTPS") == 0 || strcasecmp(choice2, "TELNET") == 0 || strcasecmp(choice2, "FTP CONTROL") == 0 || strcasecmp(choice2, "FTP DATA") == 0 || strcasecmp(choice2, "SSH") == 0) {
+                if (strcasecmp(choice2, "HTTP") == 0 || strcasecmp(choice2, "HTTPS") == 0 || strcasecmp(choice2, "TELNET") == 0 || strcasecmp(choice2, "FTP CONTROL") == 0 || strcasecmp(choice2, "FTP DATA") == 0 || strcasecmp(choice2, "SSH") == 0 || strcasecmp(choice2, "TFTP") == 0) {
                     int ethertypeKey;
                     int protocolKey;
                     int portKey;
@@ -804,217 +874,280 @@ int main() {
                     while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                         frames++;
                         char* portBuff;
-                        portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                        if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && findPacketInList(head, frames) == false)
-                            insertPacketToList(&head, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
+                        // UDP
+                        if (strcasecmp("TFTP", choice2) == 0) {
+                            portBuff = getTCPOrUDPPort(packet, UDPPorts);
+                            if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 &&
+                                    findUDPPacketInList(UDPhead, frames) == false)
+                                insertUDPPacketToList(&UDPhead, getSrcPort(packet), getDstPort(packet), getTFTPOpcode(packet), frames);
+                        }
+
+                        // TCP
+                        else {
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                            if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 &&
+                                    findTCPPacketInList(TCPhead, frames) == false)
+                                insertTCPPacketToList(&TCPhead, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
+                        }
                     }
 
                     pcap_close(pcap_file);
                     frames = 0;
 
-                    struct Packet *temp = head;
-                    struct Packet *temp2 = temp;
-                    struct Packet *temp3 = temp2;
-                    struct Packet *temp4 = head;
-                    struct Packet *temp5 = temp4;
-
-                    char *firstCompleteComPort = "FAKE_EMPTY";
-                    char *firstIncompleteComPort = "FAKE_EMPTY";
-
-                    bool completeComFullfilled = false;
-                    bool incompleteComFullfilled = false;
-
-                    // Verify 3WHS and termination - find one complete and incomplete communication, save it's port
-                    while (true) {
-                        if (completeComFullfilled == true && incompleteComFullfilled == true)
-                            break;
-
-                        char *str1 = verify3WHS(temp, temp2, temp3);
-                        char* token1;
-                        char* rest1 = str1;
-                        char *stringArray1[3];
-                        int x1 = 0;
-                        while ((token1 = strtok_r(rest1, " ", &rest1)))
-                            stringArray1[x1++] = token1;
-                        int tempFrameNumber1 = atoi(stringArray1[0]);
-                        char *tempSrcPort1 = stringArray1[1];
-                        printf("~~~~~~~~~~\n");
-                        printf("[New loop]\n");
-                        printf("start: %d Port: %s\n", tempFrameNumber1, tempSrcPort1);
-
-                        // 3WHS Success, looking for complete com
-                        if (strcmp(tempSrcPort1, "0") && completeComFullfilled == false) {
-                            char *potentionalEnd = verifyTermination(temp4, temp5, tempFrameNumber1, tempSrcPort1);
-                            printf("end: %s\n", potentionalEnd);
-                            printf("~~~~~~~~~~\n");
-
-                            // 4WHS Success aka complete com
-                            if (strcmp(potentionalEnd, "0")) {
-                                completeComFullfilled = true;
-                                firstCompleteComPort = tempSrcPort1;
-                                printf("[4WHS Success, first complete com]\n");
-                                printf("1st COMPLETE com [ %s ] = start: %d\tend: %s\n", tempSrcPort1, tempFrameNumber1, potentionalEnd);
-                                continue;
+                    // UDP
+                    if (strcasecmp("TFTP", choice2) == 0) {
+                        struct UDPPacket *temp = UDPhead;
+                        int TFTPComs = 0;
+                        while (temp != NULL) {
+                            if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                                printf("Chyba pri otvoreni PCAP suboru.");
+                                exit(0);
                             }
+                            TFTPComs++;
+                            printf("\nKomunikacia c.%d", TFTPComs);
+                            printf("\n=============================================================\n");
+                            // Printing
+                            while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                                frames++;
+                                char* frameTypeBuff = getFrameType(packet);
+                                char* ethertypeBuff;
+                                ethertypeBuff = getEtherType(packet, ethertypes);
+                                char* protocolBuff;
+                                protocolBuff = getProtocol(packet, IPProtocols);
+                                char* portBuff;
+                                portBuff = getTCPOrUDPPort(packet, UDPPorts);
 
-                                // 4WHS Fail at the first itaration
-                            else if (strcmp(potentionalEnd, "0") == 0 && incompleteComFullfilled == false) {
-                                firstIncompleteComPort = tempSrcPort1;
-                                incompleteComFullfilled = true;
-                                printf("[4WHS Fail, incomplete com fullfilled, first loop]\n");
-                                printf("1st INCOMPLETE com [ %s ] = start: %d\tend: %s\n", tempSrcPort1, tempFrameNumber1, potentionalEnd);
-                                continue;
+                                if (strcmp(temp -> srcPort, getSrcPort(packet)) == 0  && temp -> frameNumber <= frames || strcmp(temp -> srcPort, getDstPort(packet)) == 0  && temp -> frameNumber <= frames) {
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s", frameTypeBuff);
+                                    printMACAddress(packet);
+                                    printf("%s\n", ethertypeBuff);
+                                    printIPAdresses(packet);
+                                    printf("%s\n", protocolBuff);
+                                    printf("%s\n", portBuff);
+                                    printSrcPortAndDstPort(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    printf("\n=============================================================\n");
+
+                                }
                             }
+                            pcap_close(pcap_file);
+                            frames = 0;
+                            temp = temp -> next;
                         }
+                        deleteUDPPacketList(&UDPhead);
+                        break;
+                    }
 
-                            // 3WHS Success, looking for incomplete com
-                        else if (strcmp(tempSrcPort1, "0") && completeComFullfilled == true) {
-                            printf("\n[3WHS Success, complete com fullfilled]\n");
-                            char *potentionalEnd = verifyTermination(temp4, temp5, tempFrameNumber1, tempSrcPort1);
-                            printf("end %s\n", potentionalEnd);
+                    // TCP
+                    else {
+                        struct TCPPacket *temp = TCPhead;
+                        struct TCPPacket *temp2 = temp;
+                        struct TCPPacket *temp3 = temp2;
+                        struct TCPPacket *temp4 = TCPhead;
+                        struct TCPPacket *temp5 = temp4;
+
+                        char *firstCompleteComPort = "FAKE_EMPTY";
+                        char *firstIncompleteComPort = "FAKE_EMPTY";
+
+                        bool completeComFullfilled = false;
+                        bool incompleteComFullfilled = false;
+
+                        // Verify 3WHS and termination - find one complete and incomplete communication, save it's port
+                        while (true) {
+                            if (completeComFullfilled == true && incompleteComFullfilled == true)
+                                break;
+
+                            char *str1 = verify3WHS(temp, temp2, temp3);
+                            char* token1;
+                            char* rest1 = str1;
+                            char *stringArray1[3];
+                            int x1 = 0;
+                            while ((token1 = strtok_r(rest1, " ", &rest1)))
+                                stringArray1[x1++] = token1;
+                            int tempFrameNumber1 = atoi(stringArray1[0]);
+                            char *tempSrcPort1 = stringArray1[1];
                             printf("~~~~~~~~~~\n");
+                            printf("[New loop]\n");
+                            printf("start: %d Port: %s\n", tempFrameNumber1, tempSrcPort1);
 
-                            if (strcmp(potentionalEnd, "0") == 0) {
-                                incompleteComFullfilled = true;
-                                firstIncompleteComPort = tempSrcPort1;
-                                printf("[4WHS Fail, incomplete com fullfilled]\n");
-                                printf("1st INCOMPLETE com [ %s ] = start: %d\tend: %s\n", tempSrcPort1, tempFrameNumber1, potentionalEnd);
+                            // 3WHS Success, looking for complete com
+                            if (strcmp(tempSrcPort1, "0") && completeComFullfilled == false) {
+                                char *potentionalEnd = verifyTermination(temp4, temp5, tempFrameNumber1, tempSrcPort1);
+                                printf("end: %s\n", potentionalEnd);
+                                printf("~~~~~~~~~~\n");
+
+                                // 4WHS Success aka complete com
+                                if (strcmp(potentionalEnd, "0")) {
+                                    completeComFullfilled = true;
+                                    firstCompleteComPort = tempSrcPort1;
+                                    printf("[4WHS Success, first complete com]\n");
+                                    printf("1st COMPLETE com [ %s ] = start: %d\tend: %s\n", tempSrcPort1, tempFrameNumber1, potentionalEnd);
+                                    continue;
+                                }
+
+                                    // 4WHS Fail at the first itaration
+                                else if (strcmp(potentionalEnd, "0") == 0 && incompleteComFullfilled == false) {
+                                    firstIncompleteComPort = tempSrcPort1;
+                                    incompleteComFullfilled = true;
+                                    printf("[4WHS Fail, incomplete com fullfilled, first loop]\n");
+                                    printf("1st INCOMPLETE com [ %s ] = start: %d\tend: %s\n", tempSrcPort1, tempFrameNumber1, potentionalEnd);
+                                    continue;
+                                }
+                            }
+
+                                // 3WHS Success, looking for incomplete com
+                            else if (strcmp(tempSrcPort1, "0") && completeComFullfilled == true) {
+                                printf("\n[3WHS Success, complete com fullfilled]\n");
+                                char *potentionalEnd = verifyTermination(temp4, temp5, tempFrameNumber1, tempSrcPort1);
+                                printf("end %s\n", potentionalEnd);
+                                printf("~~~~~~~~~~\n");
+
+                                if (strcmp(potentionalEnd, "0") == 0) {
+                                    incompleteComFullfilled = true;
+                                    firstIncompleteComPort = tempSrcPort1;
+                                    printf("[4WHS Fail, incomplete com fullfilled]\n");
+                                    printf("1st INCOMPLETE com [ %s ] = start: %d\tend: %s\n", tempSrcPort1, tempFrameNumber1, potentionalEnd);
+                                    break;
+                                }
+                            }
+                                // 3WHS Fail
+                            else {
+                                printf("[3WHS Fail, no complete com found]\n");
                                 break;
                             }
                         }
-                            // 3WHS Fail
+
+                        // Counting packets in the complete com
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
+                        int completeComFrameCount = 0;
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                            char* portBuff;
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                            if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && (strcmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcmp(getDstPort(packet), firstCompleteComPort) == 0))
+                                completeComFrameCount++;
+                        }
+                        pcap_close(pcap_file);
+
+                        if (completeComFrameCount != 0) {
+                            printf("\n=============================================================\n");
+                            printf("Prva kompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", choice2, firstCompleteComPort, completeComFrameCount);
+                            printf("\n=============================================================\n");
+                        }
+
                         else {
-                            printf("[3WHS Fail, no complete com found]\n");
-                            break;
+                            printf("\n=============================================================\n");
+                            printf("Subor neobsahoval ani jednu kompletnu %s komunikaciu", choice2);
+                            printf("\n=============================================================\n");
                         }
-                    }
 
-                    // Counting packets in the complete com
-                    if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-                        printf("Chyba pri otvoreni PCAP suboru.");
-                        exit(0);
-                    }
-                    int completeComFrameCount = 0;
-                    while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
-                        char* portBuff;
-                        portBuff = getTCPOrUDPPort(packet, TCPPorts);
-                        if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && (strcmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcmp(getDstPort(packet), firstCompleteComPort) == 0))
-                            completeComFrameCount++;
-                    }
-                    pcap_close(pcap_file);
+                        // Printing the complete com
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
+                        int printedCompleteComCount = 0;
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                            frames++;
+                            char* frameTypeBuff = getFrameType(packet);
+                            char* ethertypeBuff;
+                            ethertypeBuff = getEtherType(packet, ethertypes);
+                            char* protocolBuff;
+                            protocolBuff = getProtocol(packet, IPProtocols);
+                            char* portBuff;
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                    if (completeComFrameCount != 0) {
-                        printf("\n=============================================================\n");
-                        printf("Prva kompletna komunikacia je pod portom %s, obsahuje %d ramcov", firstCompleteComPort, completeComFrameCount);
-                        printf("\n=============================================================\n");
-                    }
-
-                    else {
-                        printf("\n=============================================================\n");
-                        printf("Subor neobsahoval ani jednu kompletnu komunikaciu");
-                        printf("\n=============================================================\n");
-                    }
-
-                    // Printing the complete com
-                    if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-                        printf("Chyba pri otvoreni PCAP suboru.");
-                        exit(0);
-                    }
-                    int printedCompleteComCount = 0;
-                    while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
-                        frames++;
-                        char* frameTypeBuff = getFrameType(packet);
-                        char* ethertypeBuff;
-                        ethertypeBuff = getEtherType(packet, ethertypes);
-                        char* protocolBuff;
-                        protocolBuff = getProtocol(packet, IPProtocols);
-                        char* portBuff;
-                        portBuff = getTCPOrUDPPort(packet, TCPPorts);
-
-                        if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && (strcmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcmp(getDstPort(packet), firstCompleteComPort) == 0)) {
-                            printedCompleteComCount++;
-                            if (completeComFrameCount > 20 && (printedCompleteComCount <= 10 || printedCompleteComCount > completeComFrameCount - 10) || completeComFrameCount <= 20) {
-                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                                printf("\n%s", frameTypeBuff);
-                                printMACAddress(packet);
-                                printf("%s\n", ethertypeBuff);
-                                printIPAdresses(packet);
-                                printf("%s\n", protocolBuff);
-                                printf("%s\n", portBuff);
-                                printSrcPortAndDstPort(packet);
-                                printHexadecimal(pcapHeader->len, packet);
-                                printf("\n=============================================================\n");
+                            if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && (strcmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcmp(getDstPort(packet), firstCompleteComPort) == 0)) {
+                                printedCompleteComCount++;
+                                if (completeComFrameCount > 20 && (printedCompleteComCount <= 10 || printedCompleteComCount > completeComFrameCount - 10) || completeComFrameCount <= 20) {
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s", frameTypeBuff);
+                                    printMACAddress(packet);
+                                    printf("%s\n", ethertypeBuff);
+                                    printIPAdresses(packet);
+                                    printf("%s\n", protocolBuff);
+                                    printf("%s\n", portBuff);
+                                    printSrcPortAndDstPort(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    printf("\n=============================================================\n");
+                                }
                             }
                         }
-                    }
-                    pcap_close(pcap_file);
-                    frames = 0;
+                        pcap_close(pcap_file);
+                        frames = 0;
 
-                    // Counting packets in the incomplete com
-                    if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-                        printf("Chyba pri otvoreni PCAP suboru.");
-                        exit(0);
-                    }
-                    int incompleteComFrameCount = 0;
-                    while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
-                        char* portBuff;
-                        portBuff = getTCPOrUDPPort(packet, TCPPorts);
-                        if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && (strcmp(getSrcPort(packet), firstIncompleteComPort) == 0 || strcmp(getDstPort(packet), firstIncompleteComPort) == 0))
-                            incompleteComFrameCount++;
-                    }
-                    pcap_close(pcap_file);
+                        // Counting packets in the incomplete com
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
+                        int incompleteComFrameCount = 0;
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                            char* portBuff;
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                            if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey]) == 0 && (strcmp(getSrcPort(packet), firstIncompleteComPort) == 0 || strcmp(getDstPort(packet), firstIncompleteComPort) == 0))
+                                incompleteComFrameCount++;
+                        }
+                        pcap_close(pcap_file);
 
-                    if (incompleteComFrameCount != 0) {
-                        printf("Prva nekompletna komunikacia je pod portom %s, obsahuje %d ramcov", firstIncompleteComPort, incompleteComFrameCount);
-                        printf("\n=============================================================\n");
-                    }
+                        if (incompleteComFrameCount != 0) {
+                            printf("Prva nekompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", choice2, firstIncompleteComPort, incompleteComFrameCount);
+                            printf("\n=============================================================\n");
+                        }
 
-                    else {
-                        printf("Subor neobsahoval ani jednu nekompletnu komunikaciu");
-                        printf("\n=============================================================\n");
-                    }
+                        else {
+                            printf("Subor neobsahoval ani jednu nekompletnu %s komunikaciu", choice2);
+                            printf("\n=============================================================\n");
+                        }
 
-                    // Printing the incomplete com
-                    if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-                        printf("Chyba pri otvoreni PCAP suboru.");
-                        exit(0);
-                    }
-                    int printedIncompleteComCount = 0;
-                    while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
-                        frames++;
-                        char* frameTypeBuff = getFrameType(packet);
-                        char* ethertypeBuff;
-                        ethertypeBuff = getEtherType(packet, ethertypes);
-                        char* protocolBuff;
-                        protocolBuff = getProtocol(packet, IPProtocols);
-                        char* portBuff;
-                        portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                        // Printing the incomplete com
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
+                        int printedIncompleteComCount = 0;
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                            frames++;
+                            char* frameTypeBuff = getFrameType(packet);
+                            char* ethertypeBuff;
+                            ethertypeBuff = getEtherType(packet, ethertypes);
+                            char* protocolBuff;
+                            protocolBuff = getProtocol(packet, IPProtocols);
+                            char* portBuff;
+                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                        if (strcmp(getSrcPort(packet), firstIncompleteComPort) == 0 || strcmp(getDstPort(packet), firstIncompleteComPort) == 0) {
-                            printedIncompleteComCount++;
-                            if (incompleteComFrameCount > 20 && (printedIncompleteComCount <= 10 || printedIncompleteComCount > incompleteComFrameCount - 10) || incompleteComFrameCount <= 20) {
-                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                                printf("\n%s", frameTypeBuff);
-                                printMACAddress(packet);
-                                printf("%s\n", ethertypeBuff);
-                                printIPAdresses(packet);
-                                printf("%s\n", protocolBuff);
-                                printf("%s\n", portBuff);
-                                printSrcPortAndDstPort(packet);
-                                printHexadecimal(pcapHeader->len, packet);
-                                printf("\n=============================================================\n");
+                            if (strcmp(getSrcPort(packet), firstIncompleteComPort) == 0 || strcmp(getDstPort(packet), firstIncompleteComPort) == 0) {
+                                printedIncompleteComCount++;
+                                if (incompleteComFrameCount > 20 && (printedIncompleteComCount <= 10 || printedIncompleteComCount > incompleteComFrameCount - 10) || incompleteComFrameCount <= 20) {
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s", frameTypeBuff);
+                                    printMACAddress(packet);
+                                    printf("%s\n", ethertypeBuff);
+                                    printIPAdresses(packet);
+                                    printf("%s\n", protocolBuff);
+                                    printf("%s\n", portBuff);
+                                    printSrcPortAndDstPort(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    printf("\n=============================================================\n");
+                                }
                             }
                         }
+
+                        pcap_close(pcap_file);
+                        deleteTCPPacketList(&TCPhead);
+                        frames = 0;
+                        ethertypeKey = 0;
+                        protocolKey = 0;
+                        portKey = 0;
+                        break;
                     }
 
-                    pcap_close(pcap_file);
-                    deletePacketList(&head);
-                    frames = 0;
-                    ethertypeKey = 0;
-                    protocolKey = 0;
-                    portKey = 0;
-                    break;
+
+
                 }
 
                 else {

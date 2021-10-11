@@ -5,7 +5,7 @@
  * temp7 = server
  * */
 
-char * verifyTerminationOld(struct Packet *temp4, struct Packet *temp5, struct Packet *temp6, struct Packet *temp7, int temp_frame_number, const char *temp_src_port) {
+char * verifyTerminationOld(struct TCPPacket *temp4, struct TCPPacket *temp5, struct TCPPacket *temp6, struct TCPPacket *temp7, int temp_frame_number, const char *temp_src_port) {
     while (temp4 != NULL) {
         if (temp_frame_number < temp4->frameNumber && temp4->isMarked == false && strcmp(temp_src_port, temp4->dstPort) == 0 && strcmp(temp4->flag, "FIN, ACK") == 0) {
             while (temp5 != NULL) {
@@ -22,7 +22,7 @@ char * verifyTerminationOld(struct Packet *temp4, struct Packet *temp5, struct P
 //                                    printPacket(temp4);
 //                                    printPacket(temp5);
 //                                    printPacket(temp6);
-//                                    printPacket(temp7);
+//                                    printTCPPacket(temp7);
 
                                     char *_4WHSFIN = malloc(sizeof(u_char) * 20);
                                     sprintf(_4WHSFIN, "%d %s", temp7 -> frameNumber, temp7 -> dstPort);

@@ -9,22 +9,22 @@
                 }
 
 
-                while ((pcap_next_ex(pcap_file, &pcap_header, &Packet)) >= 0) {
+                while ((pcap_next_ex(pcap_file, &pcap_header, &TCPPacket)) >= 0) {
                     frames++;
-                    char* frame_type = get_frame_type(Packet);
+                    char* frame_type = get_frame_type(TCPPacket);
                     if (strcmp(frame_type, "802.3") == 0) {
                         char* sap_buff;
-                        sap_buff = get802_3Value(Packet, sap_file);
+                        sap_buff = get802_3Value(TCPPacket, sap_file);
 
                         if (strcmp(sap_buff, "STP") == 0) {
                             printBasicInfo(frames, pcap_header->caplen, pcap_header->len, output);
-                            // printf("\n%s", get_frame_type(Packet));
-                            fprintf(stdout, "\n%s", get_frame_type(Packet));
-                            fprintf(output, "\n%s", getFrameType(Packet));
-                            printMACAddress(Packet, output);
-                            printIPAdresses(Packet, output);
-                            printSrcPortAndDstPort(Packet, output);
-                            printHexadecimal(pcap_header->len, Packet, output);
+                            // printf("\n%s", get_frame_type(TCPPacket));
+                            fprintf(stdout, "\n%s", get_frame_type(TCPPacket));
+                            fprintf(output, "\n%s", getFrameType(TCPPacket));
+                            printMACAddress(TCPPacket, output);
+                            printIPAdresses(TCPPacket, output);
+                            printSrcPortAndDstPort(TCPPacket, output);
+                            printHexadecimal(pcap_header->len, TCPPacket, output);
                             count++;
                             // printf("\n=======================================================================\n\n");
                             fprintf(stdout, "\n=======================================================================\n\n");
