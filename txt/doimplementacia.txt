@@ -14,7 +14,7 @@
                     char* frame_type = get_frame_type(TCPPacket);
                     if (strcmp(frame_type, "802.3") == 0) {
                         char* sap_buff;
-                        sap_buff = get802_3Value(TCPPacket, sap_file);
+                        sap_buff = get802_3Type(TCPPacket, sap_file);
 
                         if (strcmp(sap_buff, "STP") == 0) {
                             printBasicInfo(frames, pcap_header->caplen, pcap_header->len, output);

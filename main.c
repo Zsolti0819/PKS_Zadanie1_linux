@@ -159,6 +159,18 @@ void insertARPPacketToList(struct ARPPacket **headRef, int frameNumber, char *sr
     last->next = newNode;
 }
 
+void deleteARPPacketList(struct ARPPacket** headRef) {
+    struct ARPPacket* temp = *headRef;
+    struct ARPPacket* next;
+
+    while (temp != NULL) {
+        next = temp->next;
+        free(temp);
+        temp = next;
+    }
+    *headRef = NULL;
+}
+
 void printARPPacket(struct ARPPacket *node) {
     printf("~~~~~~~~~~\n");
     printf("%d\n", node->frameNumber);
@@ -494,7 +506,7 @@ char* getARPValue(const u_char* packet, FILE* ARPFile) {
 
 }
 
-char* get802_3Value(const u_char* packet, FILE* _802_3File)
+char* get802_3Type(const u_char* packet, FILE* _802_3File)
 {
     int valueInTheFile = 0;
 
@@ -698,20 +710,20 @@ int main() {
 
                 while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
-                    char* frameType = getFrameType(packet);
+                    char* frameTypeBuff = getFrameType(packet);
                     char* ethertypeBuff = getEtherType(packet, ethertypes);
                     char* protocolBuff;
 
                     // Je 802.3
-                    if (strcmp(frameType, "802.3") == 0) {
+                    if (strcmp(frameTypeBuff, "802.3") == 0) {
 
                         // ramec cislo x, dlzky ramca
                         printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
 
                         // 802.3
-                        printf("\n%s", frameType);
+                        printf("\n%s", frameTypeBuff);
 
-                        char* _802_3Buff = get802_3Value(packet, _802_3);
+                        char* _802_3Buff = get802_3Type(packet, _802_3);
 
                         // Global DSAP == FF == RAW
                         if (strcmp(_802_3Buff, "Global DSAP") == 0) {
@@ -733,7 +745,7 @@ int main() {
                     }
 
                     // Je Ethernet II
-                    else if (strcmp(frameType, "Ethernet II") == 0) {
+                    else if (strcmp(frameTypeBuff, "Ethernet II") == 0) {
                         // Je ARP, vypiseme ARP-Request/Reply,IP, MAC
                         if (strcmp(ethertypeBuff, "ARP") == 0) {
                             char* ARPBuff = getARPValue(packet, ARPOperation);
@@ -760,7 +772,7 @@ int main() {
                             }
 
                             printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                            printf("\n%s\n", frameType);
+                            printf("\n%s\n", frameTypeBuff);
                             printf("%s", ethertypeBuff);
                             printMACAddress(packet);
 
@@ -769,7 +781,7 @@ int main() {
                         // Je IP
                         if (strcmp(ethertypeBuff, "ARP") != 0) {
                             printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                            printf("\n%s", frameType);
+                            printf("\n%s", frameTypeBuff);
                             printMACAddress(packet);
                             printf("%s\n", ethertypeBuff);
                             printIPAdresses(packet);
@@ -923,7 +935,6 @@ int main() {
                                     portKey = k;
                                 }
 
-//                    printf("%d %d %d\n", ethertypeKey, protocolKey, portKey);
 //                    printf("FOUND %s\n", (const char *) categories[ethertypeKey][protocolKey][portKey]);
 
                     // Inserting all packets to a list, which are specific protocol
@@ -972,11 +983,12 @@ int main() {
                             temp3 = temp3->next;
                         }
 
-                        int *excludeARPPairs = malloc(sizeof (int) * allARPComs);
+                        int buff = 0;
+                        int excludeARPPairs[allARPComs];
 
 //                        printf("All ARP COMS: %d\n", allARPComs);
 
-                        int ARPComs = 0;
+                        int actualARPCOM = 0;
                         while (temp != NULL) {
                             if (strcmp(temp -> opCode, "Request") == 0 && temp->isMarked == false) {
                                 while (temp2 != NULL) {
@@ -984,10 +996,8 @@ int main() {
                                         strcmp(temp->srcMACAdress, temp2->dstMACAdress) == 0) {
                                         temp->isMarked = true;
                                         temp2->isMarked = true;
-                                        ARPComs++;
-                                        printf("Komunikacia c.%d\n", ARPComs);
-
-                                        int buff = 0;
+                                        actualARPCOM++;
+                                        printf("Komunikacia c.%d\n", actualARPCOM);
 
                                         if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
                                             printf("Chyba pri otvoreni PCAP suboru.");
@@ -1045,22 +1055,116 @@ int main() {
                             temp = temp -> next;
                         }
 
-//                        printf("Nekompletne ARP Requesty:\n");
-//                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-//                            printf("Chyba pri otvoreni PCAP suboru.");
-//                            exit(0);
-//                        }
-//
-//
-//                        pcap_close(pcap_file);
-//                        frames = 0;
 
+                        // Make difference operation from two arrays
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
 
-                        for (int buffer = 0; buffer < sizeof (excludeARPPairs) / 4; buffer++)
-                            printf("Array[%d] = %d\n", buffer, excludeARPPairs[buffer]);
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0)
+                            frames++;
 
+                        pcap_close(pcap_file);
+
+                        int yy;
+                        int bufferArraySet[frames];
+                        int finalSet[frames - buff];
+                        for (yy = 0; yy < frames; yy++) {
+                            bufferArraySet[yy] = yy + 1;
+                        }
+                        frames = 0;
+
+                        int ii = 0;
+                        int jj = 0;
+                        int kk = 0;
+                        int flag = 0;
+
+                        for (ii = 0; ii < yy; ii++) {
+                            flag = 1;
+                            for (jj = 0; jj < buff; jj++) {
+                                if (bufferArraySet[ii] == excludeARPPairs[jj]) {
+                                    flag = 0;
+                                    break;
+                                }
+                            }
+                            if (flag == 1) {
+                                finalSet[kk] = bufferArraySet[ii];
+                                kk++;
+                            }
+                        }
+
+                        int finalsetSize = kk;
+
+                        // ARP Requests without Replies
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
+
+                        printf("ARP Requesty bez Reply:");
+                        printf("\n=============================================================\n");
+
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                            frames++;
+                            char *frameTypeBuff = getFrameType(packet);
+                            char *ethertypeBuff = getEtherType(packet, ethertypes);
+                            char *ARPBuff = getARPValue(packet, ARPOperation);
+                            for(kk = 0; kk < finalsetSize; kk++) {
+                                if (strcmp(ethertypeBuff, "ARP") == 0 && strcmp(ARPBuff, "Request") == 0 && frames == finalSet[kk]) {
+                                    char *ARPDSTIP = getARPdstIP(packet);
+                                    char *ARPSRCIP = getARPsrcIP(packet);
+                                    char *ARPSRCMAC = getARPsrcMAC(packet);
+                                    char *ARPDSTMAC = getARPdstMAC(packet);
+                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
+                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s\n", frameTypeBuff);
+                                    printf("%s", ethertypeBuff);
+                                    printMACAddress(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    printf("\n=============================================================\n");
+                                }
+                            }
+                        }
+
+                        pcap_close(pcap_file);
+
+                        // ARP Replies without Requests
+                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                            printf("Chyba pri otvoreni PCAP suboru.");
+                            exit(0);
+                        }
+
+                        printf("ARP Reply bez Requestu:");
+                        printf("\n=============================================================\n");
+
+                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                            frames++;
+                            char *frameTypeBuff = getFrameType(packet);
+                            char *ethertypeBuff = getEtherType(packet, ethertypes);
+                            char *ARPBuff = getARPValue(packet, ARPOperation);
+                            for(kk = 0; kk < finalsetSize; kk++) {
+                                if (strcmp(ethertypeBuff, "ARP") == 0 && strcmp(ARPBuff, "Reply") == 0 && frames == finalSet[kk]) {
+                                    char *ARPDSTIP = getARPdstIP(packet);
+                                    char *ARPSRCIP = getARPsrcIP(packet);
+                                    char *ARPSRCMAC = getARPsrcMAC(packet);
+                                    char *ARPDSTMAC = getARPdstMAC(packet);
+                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
+                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s\n", frameTypeBuff);
+                                    printf("%s", ethertypeBuff);
+                                    printMACAddress(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    printf("\n=============================================================\n");
+                                }
+                            }
+                        }
+
+                        pcap_close(pcap_file);
+                        deleteARPPacketList(&ARPhead);
                         break;
-
                     }
 
                     // UDP
