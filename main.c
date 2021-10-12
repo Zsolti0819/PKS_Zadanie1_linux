@@ -155,6 +155,43 @@ void insertARPPacketToList(struct ARPPacket **headRef, int frameNumber, char *sr
     last->next = newNode;
 }
 
+void printARPPacket(struct ARPPacket *node) {
+    printf("~~~~~~~~~~\n");
+    printf("%d\n", node->frameNumber);
+    printf("SRC IP: %s\n", node->srcIPAdress);
+    printf("DST IP: %s\n", node->dstIPAdress);
+    printf("SRC MAC: %s\n", node->srcMACAdress);
+    printf("DST MAC: %s\n", node->dstMACAdress);
+}
+
+char* getARPsrcIP (const u_char *packet) {
+    char* ARPSRCIP;
+    ARPSRCIP = malloc(sizeof(u_char) * 20);
+    sprintf(ARPSRCIP, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
+    return ARPSRCIP;
+}
+
+char* getARPdstIP (const u_char *packet) {
+    char* ARPDSTIP;
+    ARPDSTIP = malloc(sizeof(u_char) * 20);
+    sprintf(ARPDSTIP, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
+    return ARPDSTIP;
+}
+
+char* getARPsrcMAC (const u_char *packet) {
+    char* ARPSRCMAC;
+    ARPSRCMAC = malloc(sizeof(u_char) * 50);
+    sprintf(ARPSRCMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
+    return ARPSRCMAC;
+}
+
+char* getARPdstMAC (const u_char *packet) {
+    char* ARPDSTMAC;
+    ARPDSTMAC = malloc(sizeof(u_char) * 50);
+    sprintf(ARPDSTMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+    return ARPDSTMAC;
+}
+
 struct IPv4Packet {
     char* srcIPAdress;
     int txPackets;
@@ -636,6 +673,7 @@ int main() {
     struct pcap_pkthdr* pcapHeader;
     const u_char* packet;
     struct IPv4Packet* IPv4Head = NULL;
+    struct ARPPacket* ARPhead = NULL;
     struct TCPPacket* TCPhead = NULL;
     struct UDPPacket* UDPhead = NULL;
     int frames = 0;
@@ -880,7 +918,7 @@ int main() {
                                     portKey = k;
                                 }
 
-
+//                    printf("%d %d %d\n", ethertypeKey, protocolKey, portKey);
 //                    printf("FOUND %s\n", (const char *) categories[ethertypeKey][protocolKey][portKey]);
 
                     // Inserting all packets to a list, which are specific protocol
@@ -891,24 +929,26 @@ int main() {
 
                     while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                         frames++;
-                        char *portBuff;
                         // TCP
                         if (ethertypeKey == 1 && protocolKey == 1) {
-                            portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                            char *portBuff = getTCPOrUDPPort(packet, TCPPorts);
                             if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey][0]) == 0 && findTCPPacketInList(TCPhead, frames) == false)
                                 insertTCPPacketToList(&TCPhead, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
                         }
 
                         // UDP
                         else if (ethertypeKey == 1 && protocolKey == 2) {
-                            portBuff = getTCPOrUDPPort(packet, UDPPorts);
+                            char *portBuff = getTCPOrUDPPort(packet, UDPPorts);
                             if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey][0]) == 0 && findUDPPacketInList(UDPhead, frames) == false)
                                 insertUDPPacketToList(&UDPhead, getSrcPort(packet), frames);
                         }
 
-//                        else if (ethertypeKey == 2 && protocolKey == 0) {
-//                            printf("TO DO, ARP\n");
-//                        }
+                        // ARP
+                        else if (ethertypeKey == 2 && protocolKey == 0) {
+                            char *ethertypeBuff = getEtherType(packet, ethertypes);
+                            if (strcmp(ethertypeBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey][0]) == 0 && findARPPacketInList(ARPhead, frames) == false)
+                                insertARPPacketToList(&ARPhead, frames, getARPsrcIP(packet), getARPdstIP(packet), getARPsrcMAC(packet), getARPdstMAC(packet));
+                        }
                     }
 
                     pcap_close(pcap_file);
@@ -921,42 +961,49 @@ int main() {
                             exit(0);
                         }
 
-                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
-                            frames++;
-                            char *frameTypeBuff = getFrameType(packet);
-                            char *ethertypeBuff = getEtherType(packet, ethertypes);
-                            char* ARPBuff = getARPValue(packet, ARPOperation);
-                            if (strcmp(ethertypeBuff, "ARP") == 0) {
-                                char ARPDSTIP[20];
-                                char ARPSRCIP[20];
-                                char ARPSRCMAC[50];
-                                char ARPDSTMAC[50];
+                        struct ARPPacket *temp = ARPhead;
+                        while (temp != NULL) {
 
-                                sprintf(ARPDSTIP, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
-                                sprintf(ARPSRCIP, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
-                                sprintf(ARPDSTMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
-                                sprintf(ARPSRCMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
-
-                                // Request
-                                if (strcmp(ARPBuff, "Request") == 0) {
-                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
-                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
-                                }
-
-                                // Reply
-                                else {
-                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
-                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
-                                }
-
-                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                                printf("\n%s\n", frameTypeBuff);
-                                printf("%s", ethertypeBuff);
-                                printMACAddress(packet);
-                                printHexadecimal(pcapHeader->len, packet);
-                                printf("\n=============================================================\n");
-                            }
+                            printARPPacket(temp);
+                            temp = temp -> next;
                         }
+
+//                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+//                            frames++;
+//                            char *frameTypeBuff = getFrameType(packet);
+//                            char *ethertypeBuff = getEtherType(packet, ethertypes);
+//                            char* ARPBuff = getARPValue(packet, ARPOperation);
+//                            if (strcmp(ethertypeBuff, "ARP") == 0) {
+//                                char ARPDSTIP[20];
+//                                char ARPSRCIP[20];
+//                                char ARPSRCMAC[50];
+//                                char ARPDSTMAC[50];
+//
+//                                sprintf(ARPDSTIP, "%d.%d.%d.%d", packet[38], packet[39], packet[40], packet[41]);
+//                                sprintf(ARPSRCIP, "%d.%d.%d.%d", packet[28], packet[29], packet[30], packet[31]);
+//                                sprintf(ARPDSTMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+//                                sprintf(ARPSRCMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
+//
+//                                // Request
+//                                if (strcmp(ARPBuff, "Request") == 0) {
+//                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
+//                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+//                                }
+//
+//                                // Reply
+//                                else {
+//                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
+//                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+//                                }
+//
+//                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+//                                printf("\n%s\n", frameTypeBuff);
+//                                printf("%s", ethertypeBuff);
+//                                printMACAddress(packet);
+//                                printHexadecimal(pcapHeader->len, packet);
+//                                printf("\n=============================================================\n");
+//                            }
+//                        }
 
                         pcap_close(pcap_file);
                         frames = 0;
@@ -964,7 +1011,7 @@ int main() {
                     }
 
                     // UDP
-                    if (strcasecmp("TFTP", choice2) == 0) {
+                    else if (strcasecmp("TFTP", choice2) == 0) {
 
                         struct UDPPacket *temp = UDPhead;
                         int TFTPComs = 0;
@@ -1250,7 +1297,6 @@ int main() {
                     printf("Bad luck\n");
                     break;
                 }
-
             }
 
             default:
