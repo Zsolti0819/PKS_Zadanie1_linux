@@ -502,8 +502,10 @@ char * verify3WHS(struct TCPPacket *temp, struct TCPPacket *temp2, struct TCPPac
 //                            printTCPPacket(temp3);
 
                             char *_3WHSSYN = malloc(sizeof(u_char) * 20);
-                            if (strcmp(temp -> srcPort, "20") == 0 || strcmp(temp -> srcPort, "21") == 0 || strcmp(temp -> srcPort, "22") == 0 || strcmp(temp -> srcPort, "23") == 0 || strcmp(temp -> srcPort, "80") == 0 || strcmp(temp -> srcPort, "443") == 0 || strcmp(temp -> srcPort, "69") == 0)
+                            // FTP DATA
+                            if (strcmp(temp -> srcPort, "20") == 0)
                                 sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> dstPort);
+                            // HTTP, HTTPS, TELNET, SSH, TFP CONTROL
                             else
                                 sprintf(_3WHSSYN, "%d %s", temp -> frameNumber, temp -> srcPort);
                             return _3WHSSYN;
@@ -852,16 +854,20 @@ int main() {
                     while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                         frames++;
                         char *portBuff;
-                        if (protocolKey == 1) {
+                        if (ethertypeKey == 1 && protocolKey == 1) {
                             portBuff = getTCPOrUDPPort(packet, TCPPorts);
                             if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey][0]) == 0 && findTCPPacketInList(TCPhead, frames) == false)
                                 insertTCPPacketToList(&TCPhead, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
                         }
 
-                        else if (protocolKey == 2) {
+                        else if (ethertypeKey == 1 && protocolKey == 2) {
                             portBuff = getTCPOrUDPPort(packet, UDPPorts);
                             if (strcmp(portBuff, (const char *) &categories[ethertypeKey][protocolKey][portKey][0]) == 0 && findUDPPacketInList(UDPhead, frames) == false)
                                 insertUDPPacketToList(&UDPhead, getSrcPort(packet), 0);
+                        }
+
+                        else if (ethertypeKey == 2 && protocolKey == 0) {
+                            printf("TODO, ARP\n");
                         }
                     }
                     pcap_close(pcap_file);
