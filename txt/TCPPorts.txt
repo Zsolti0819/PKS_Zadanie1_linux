@@ -11,7 +11,7 @@
 # 6E	POP3
 # 6F	SUNRPC
 # 77	NNTP
-# 8B	NETBIOS SSN
+# 8B	SMB (Server Message Control Protocol)
 # 8F	IMAP
 # B3	BGP
 # 185	LDAP

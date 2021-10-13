@@ -1,7 +1,7 @@
 # 7	Echo
 # 13	Chargen
 # 25	Time
-# 35	Domain
+# 35	DNS
 # 43	Bootps DHCP
 # 44	Bootpc DHCP
 # 45	TFTP
@@ -13,4 +13,5 @@
 # 202	syslog
 # 208	RIP
 # 829A	Traceroute
+# 7C1   HSRP
 -

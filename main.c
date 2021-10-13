@@ -5,6 +5,7 @@
 #include <pcap/pcap.h>
 
 char**** categories[3][4][7][10];
+char***** categoriesNew[10][10][10][10][10];
 
 struct TCPPacket {
     int frameNumber;
@@ -581,6 +582,31 @@ void fillCategoriesMDA() {
     strcpy((char *) &categories[2][0][0][0], "ARP");
 }
 
+void fillCategoriesMDAnew() {
+    int i, j, k, l, m;
+    for (i = 0; i < 10; i++)
+        for (j = 0; j < 10; j++)
+            for (k = 0; k < 10; k++)
+                for (l = 0; l < 10; l++)
+                    for (m = 0; m <10; m++)
+                        strcpy((char *) &categories[i][j][k][l][m], "-");
+
+    strcpy((char *) &categories[0][0][0][0][0], "Ethernet II");
+    strcpy((char *) &categories[0][1][0][0][0], "IPv4");
+    strcpy((char *) &categories[0][1][1][0][0], "TCP");
+    strcpy((char *) &categories[0][1][1][1][0], "FTP DATA");
+    strcpy((char *) &categories[0][1][1][2][0], "FTP CONTROL");
+    strcpy((char *) &categories[0][1][1][3][0], "SSH");
+    strcpy((char *) &categories[0][1][1][4][0], "TELNET");
+    strcpy((char *) &categories[0][1][1][5][0], "HTTP");
+    strcpy((char *) &categories[0][1][1][6][0], "HTTPS");
+    strcpy((char *) &categories[0][1][2][0][0], "UDP");
+    strcpy((char *) &categories[0][1][2][1][0], "TFTP");
+    strcpy((char *) &categories[0][1][3][0][0], "ICMP");
+    strcpy((char *) &categories[0][2][0][0][0], "ARP");
+    strcpy((char *) &categories[1][0][0][0][0], "802.3");
+}
+
 char * verify3WHS(struct TCPPacket *temp, struct TCPPacket *temp2, struct TCPPacket *temp3) {
     while (temp != NULL) {
         if (strcmp(temp -> flag, "SYN") == 0 && temp -> isMarked == false) {
@@ -672,7 +698,7 @@ char * verifyTermination(struct TCPPacket *temp4, struct TCPPacket *temp5, int c
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-2.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -866,10 +892,9 @@ int main() {
                     frames++;
                     char* frameTypeBuff = getFrameType(packet);
                     if (strcmp(frameTypeBuff, "Ethernet II") == 0) {
-                        char* ethertype_buff;
-                        ethertype_buff = getEtherType(packet, ethertypes);
-                        char* protocolBuff;
-                        protocolBuff = getProtocol(packet, IPProtocols);
+                        char* ethertype_buff = getEtherType(packet, ethertypes);
+                        char* protocolBuff = getProtocol(packet, IPProtocols);
+
                         char* portBuff;
                         if (protocolKey == 1)
                             portBuff = getTCPOrUDPPort(packet, TCPPorts);
@@ -897,6 +922,16 @@ int main() {
                             printf("%s\n", protocolBuff);
                             printf("%s\n", portBuff);
                             printSrcPortAndDstPort(packet);
+                            printHexadecimal(pcapHeader->len, packet);
+                            count++;
+                            printf("\n=============================================================\n");
+                        }
+                    }
+                    else if (strcmp(frameTypeBuff, "802.3") == 0) {
+                        char* _802_3Buff = get802_3Type(packet, _802_3);
+                        if (strcmp(_802_3Buff, "BPDU (Bridge PDU 802.1 Spanning tree)") == 0) {
+                            printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                            printf("\n%s", frameTypeBuff);
                             printHexadecimal(pcapHeader->len, packet);
                             count++;
                             printf("\n=============================================================\n");
