@@ -5,7 +5,7 @@
 # 43	Bootps DHCP
 # 44	Bootpc DHCP
 # 45	TFTP
-# 89	Netbios ns
+# 89	NBNS
 # 8A	Netbios dgm
 # A1	SNMP
 # A2	SNMP trap
@@ -14,4 +14,5 @@
 # 208	RIP
 # 829A	Traceroute
 # 7C1   HSRP
+# 14E9  MDNS
 -
