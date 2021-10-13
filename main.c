@@ -198,15 +198,15 @@ char* getARPdstIP (const u_char *packet) {
 
 char* getARPsrcMAC (const u_char *packet) {
     char* ARPSRCMAC;
-    ARPSRCMAC = malloc(sizeof(u_char) * 50);
-    sprintf(ARPSRCMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
+    ARPSRCMAC = malloc(sizeof(char) * 50);
+    sprintf(ARPSRCMAC, "%.2X %.2X %.2X %.2X %.2X %.2X", packet[6], packet[7], packet[8], packet[9], packet[10], packet[11]);
     return ARPSRCMAC;
 }
 
 char* getARPdstMAC (const u_char *packet) {
     char* ARPDSTMAC;
-    ARPDSTMAC = malloc(sizeof(u_char) * 50);
-    sprintf(ARPDSTMAC, "%.2X %.2X %.2X %.2X %.2X %.2X ", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+    ARPDSTMAC = malloc(sizeof(char) * 50);
+    sprintf(ARPDSTMAC, "%.2X %.2X %.2X %.2X %.2X %.2X", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
     return ARPDSTMAC;
 }
 
@@ -698,7 +698,7 @@ char * verifyTermination(struct TCPPacket *temp4, struct TCPPacket *temp5, int c
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-2.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -1024,65 +1024,74 @@ int main() {
 //                        printf("All ARP COMS: %d\n", allARPComs);
 
                         int actualARPCOM = 0;
+
+
                         while (temp != NULL) {
                             if (strcmp(temp -> opCode, "Request") == 0 && temp->isMarked == false) {
                                 while (temp2 != NULL) {
-                                    if (strcmp(temp2 -> opCode, "Reply") == 0 && temp2->isMarked == false && temp->frameNumber < temp2->frameNumber &&
-                                        strcmp(temp->srcMACAdress, temp2->dstMACAdress) == 0) {
-                                        temp->isMarked = true;
-                                        temp2->isMarked = true;
-                                        actualARPCOM++;
-                                        printf("Komunikacia c.%d\n", actualARPCOM);
+                                    if (strcmp(temp2 -> opCode, "Reply") == 0  && temp2->isMarked == false && temp->frameNumber < temp2->frameNumber) {
+                                        char *test1 = temp -> srcMACAdress;
+                                        char *test2 = temp2 -> dstMACAdress;
 
-                                        if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
-                                            printf("Chyba pri otvoreni PCAP suboru.");
-                                            exit(0);
-                                        }
+                                        if (strcmp(test1, test2) == 0) {
+                                            temp->isMarked = true;
+                                            temp2->isMarked = true;
 
-                                        while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
-                                            frames++;
-                                            char *frameTypeBuff = getFrameType(packet);
-                                            char *ethertypeBuff = getEtherType(packet, ethertypes);
-                                            char *ARPBuff = getARPValue(packet, ARPOperation);
-                                            if ((strcmp(ethertypeBuff, "ARP") == 0 && strcmp(ARPBuff, "Request") == 0 && strcmp(temp->srcMACAdress, getARPsrcMAC(packet)) == 0) ||
-                                                (strcmp(ethertypeBuff, "ARP") == 0 && strcmp(ARPBuff, "Reply") == 0 && strcmp(temp->srcMACAdress, getARPdstMAC(packet)) == 0)) {
+                                            actualARPCOM++;
+                                            printf("Komunikacia c.%d\n", actualARPCOM);
 
-                                                excludeARPPairs[buff++] = frames;
+                                            if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                                                printf("Chyba pri otvoreni PCAP suboru.");
+                                                exit(0);
+                                            }
 
-                                                char *ARPDSTIP = getARPdstIP(packet);
-                                                char *ARPSRCIP = getARPsrcIP(packet);
-                                                char *ARPSRCMAC = getARPsrcMAC(packet);
-                                                char *ARPDSTMAC = getARPdstMAC(packet);
+                                            while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                                                frames++;
+                                                char *frameTypeBuff = getFrameType(packet);
+                                                char *ethertypeBuff = getEtherType(packet, ethertypes);
+                                                char *ARPBuff = getARPValue(packet, ARPOperation);
+                                                if ((strcmp(ethertypeBuff, "ARP") == 0 && strcmp(ARPBuff, "Request") == 0 && strcmp(temp->srcMACAdress, getARPsrcMAC(packet)) == 0) ||
+                                                    (strcmp(ethertypeBuff, "ARP") == 0 && strcmp(ARPBuff, "Reply") == 0 && strcmp(temp->srcMACAdress, getARPdstMAC(packet)) == 0)) {
 
-                                                // Request
-                                                if (strcmp(ARPBuff, "Request") == 0) {
-                                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
-                                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
-                                                }
+                                                    excludeARPPairs[buff++] = frames;
 
-                                                // Reply
-                                                else {
-                                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
-                                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                                    char *ARPDSTIP = getARPdstIP(packet);
+                                                    char *ARPSRCIP = getARPsrcIP(packet);
+                                                    char *ARPSRCMAC = getARPsrcMAC(packet);
+                                                    char *ARPDSTMAC = getARPdstMAC(packet);
+
+                                                    // Request
+                                                    if (strcmp(ARPBuff, "Request") == 0) {
+                                                        printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
+                                                        printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                                    }
+
+                                                        // Reply
+                                                    else {
+                                                        printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
+                                                        printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                                        printf("\n%s\n", frameTypeBuff);
+                                                        printf("%s", ethertypeBuff);
+                                                        printMACAddress(packet);
+                                                        printHexadecimal(pcapHeader->len, packet);
+                                                        printf("\n=============================================================\n");
+                                                        break;
+                                                    }
+
                                                     printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                                                     printf("\n%s\n", frameTypeBuff);
                                                     printf("%s", ethertypeBuff);
                                                     printMACAddress(packet);
                                                     printHexadecimal(pcapHeader->len, packet);
                                                     printf("\n=============================================================\n");
-                                                    break;
                                                 }
-
-                                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                                                printf("\n%s\n", frameTypeBuff);
-                                                printf("%s", ethertypeBuff);
-                                                printMACAddress(packet);
-                                                printHexadecimal(pcapHeader->len, packet);
-                                                printf("\n=============================================================\n");
                                             }
+                                            pcap_close(pcap_file);
+                                            frames = 0;
                                         }
-                                        pcap_close(pcap_file);
-                                        frames = 0;
+                                        else
+                                            break;
                                     }
                                     temp2 = temp2 -> next;
                                 }
@@ -1163,6 +1172,7 @@ int main() {
                             }
                         }
 
+                        frames = 0;
                         pcap_close(pcap_file);
 
                         // ARP Replies without Requests
@@ -1197,6 +1207,7 @@ int main() {
                             }
                         }
 
+                        frames = 0;
                         pcap_close(pcap_file);
                         deleteARPPacketList(&ARPhead);
                         break;
