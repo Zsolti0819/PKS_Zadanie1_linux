@@ -287,7 +287,7 @@ void printIPWithTheMostPacketsSent(struct IPv4Packet *start) {
 void printMenu() {
     printf("\n0 - Koniec\n");
     printf("1 - Vypis vsetkych komunikacii\n");
-    printf("2 - Filtrovanie podla protokolu (viacere moznosti)\n");
+    printf("2 - Filtrovanie podla protokolu\n");
     printf("3 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
     printf("=============================================================\n");
 }
@@ -847,7 +847,7 @@ char * connectARPPairs (struct ARPPacket *temp, struct ARPPacket *temp2) {
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-2.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -915,7 +915,7 @@ int main() {
                         // LLC, ani jeden
                         else {
                             printf("LLC\n");
-                            printf("%s", _802_3Buff);
+                            printf("%s\n", _802_3Buff);
                             char *_802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
                             printf("%s", _802_3ProtocolBuff);
                         }
@@ -1551,13 +1551,13 @@ int main() {
 
                         if (completeComFrameCount != 0) {
                             printf("\n=============================================================\n");
-                            printf("Prva kompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", (const char *) bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey], firstCompleteComPort, completeComFrameCount);
+                            printf("Prva kompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey], firstCompleteComPort, completeComFrameCount);
                             printf("\n=============================================================\n");
                         }
 
                         else {
                             printf("\n=============================================================\n");
-                            printf("Subor neobsahoval ani jednu kompletnu %s komunikaciu", (const char *) bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+                            printf("Subor neobsahoval ani jednu kompletnu %s komunikaciu", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
                             printf("\n=============================================================\n");
                         }
 
@@ -1608,12 +1608,12 @@ int main() {
                         pcap_close(pcap_file);
 
                         if (incompleteComFrameCount != 0) {
-                            printf("Prva nekompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", (const char *) bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey], firstIncompleteComPort, incompleteComFrameCount);
+                            printf("Prva nekompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey], firstIncompleteComPort, incompleteComFrameCount);
                             printf("\n=============================================================\n");
                         }
 
                         else {
-                            printf("Subor neobsahoval ani jednu nekompletnu %s komunikaciu", (const char *) bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+                            printf("Subor neobsahoval ani jednu nekompletnu %s komunikaciu", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
                             printf("\n=============================================================\n");
                         }
 
