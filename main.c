@@ -597,15 +597,19 @@ char* get802_Protocol(const u_char* packet, FILE* _802_3File, bool isJustLLC)
     int valueInTheFile = 0;
     int realValue1;
     int realValue2;
+    int realValue3;
 
     if (isJustLLC == true) {
         realValue1 = packet[17];
         realValue2 = packet[18];
+        realValue3 = packet[19];
     }
 
+    // LLC + SNAP
     else {
         realValue1 = packet[22];
         realValue2 = packet[23];
+        realValue3 = packet[24];
     }
 
     rewind(_802_3File);
@@ -616,7 +620,13 @@ char* get802_Protocol(const u_char* packet, FILE* _802_3File, bool isJustLLC)
     while ((c = getc(_802_3File)) != '-') {
         if (c == '#') {
             fscanf(_802_3File, "%x ", &valueInTheFile);
-            if (realValue1 == valueInTheFile && realValue2 == valueInTheFile) {
+            if (isJustLLC == false && realValue1 == valueInTheFile && realValue2 == valueInTheFile && realValue3 == 2) {
+                while ((c = getc(_802_3File)) != '\n')
+                    if (c != '\t')
+                        _802_3ProtocolBuff[i++] = c;
+                break;
+            }
+            else if (isJustLLC == true && realValue1 == valueInTheFile && realValue2 == valueInTheFile && realValue3 == 0) {
                 while ((c = getc(_802_3File)) != '\n')
                     if (c != '\t')
                         _802_3ProtocolBuff[i++] = c;
@@ -710,7 +720,6 @@ void fillBigBufferStringArray() {
     strcpy((char *) &bigBufferStringArray[1][8][0][0], "X.25 PLP (ISO 8208)");
     strcpy((char *) &bigBufferStringArray[1][9][0][0], "PROWAY (IEC 955) Active Station List Maintenance");
     strcpy((char *) &bigBufferStringArray[1][10][0][0], "SNAP");
-    strcpy((char *) &bigBufferStringArray[1][10][1][0], "STP");
     strcpy((char *) &bigBufferStringArray[1][11][0][0], "IPX (Novell NetWare)");
     strcpy((char *) &bigBufferStringArray[1][12][0][0], "IPX (Novell NetWare)");
     strcpy((char *) &bigBufferStringArray[1][13][0][0], "LAN Management");
@@ -838,7 +847,7 @@ char * connectARPPairs (struct ARPPacket *temp, struct ARPPacket *temp2) {
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-2.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -1069,44 +1078,39 @@ int main() {
                         char* _802_3Buff = get802_3SAP(packet, _802_3);
                         char *_802_3ProtocolBuff;
 
-                        // SNAP == AA == SNAP + LLC
-                        if (frametypeKey == 1 && ethertypeKey == 10) {
-                            if (strcasecmp(_802_3Buff, "SNAP") == 0)
+                        if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][5][0][0]) == 0 ||
+                            strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][10][0][0]) == 0) {
+
+                            // AA
+                            if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][10][0][0]) == 0) {
                                 _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
-                        }
-
-                        // Not RAW, not SNAP + LLC, it is just LLC
-                        else if (frametypeKey == 1 && ethertypeKey != 10 && ethertypeKey != 15) {
-                            if (strcasecmp(_802_3Buff, "SNAP") && strcasecmp(_802_3Buff, "Global DSAP"))
-                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
-                        }
-
-                        else
-                            _802_3ProtocolBuff = "EMPTY";
-
-                        if (strcasecmp(frameTypeBuff, "802.3") == 0) {
-                            printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                            printf("\n%s ", frameTypeBuff);
-
-                            // SNAP == AA == SNAP + LLC
-                            if (frametypeKey == 1 && ethertypeKey == 10) {
-                                printf("SNAP + LLC\n%s\n", _802_3Buff);
-                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
-                                printf("%s", _802_3ProtocolBuff);
+                                if (strcmp(_802_3ProtocolBuff, (const char *) &bigBufferStringArray[1][5][1][0]) == 0) {
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s ", frameTypeBuff);
+                                    printf("%s + LLC\n", _802_3Buff);
+                                    printf("%s", _802_3ProtocolBuff);
+                                    printMACAddress(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    count++;
+                                    printf("\n=============================================================\n");
+                                }
                             }
 
-                            // LLC, ani jeden
-                            else if (frametypeKey == 1 && ethertypeKey != 10 && ethertypeKey != 16) {
+                            // Just LLC
+                            else if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][5][0][0]) == 0) {
+                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                                if (strcmp(_802_3ProtocolBuff, (const char *) &bigBufferStringArray[1][5][1][0]) == 0) {
+                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                printf("\n%s ", frameTypeBuff);
                                 printf("LLC\n");
-                                printf("%s", _802_3Buff);
-                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                                printf("%s\n", _802_3Buff);
                                 printf("%s", _802_3ProtocolBuff);
+                                printMACAddress(packet);
+                                printHexadecimal(pcapHeader->len, packet);
+                                count++;
+                                printf("\n=============================================================\n");
+                                }
                             }
-
-                            printMACAddress(packet);
-                            printHexadecimal(pcapHeader->len, packet);
-                            count++;
-                            printf("\n=============================================================\n");
                         }
                     }
                 }
