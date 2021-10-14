@@ -663,7 +663,6 @@ void fillBigBufferStringArray() {
 
     strcpy((char *) &bigBufferStringArray[0][1][0][0], "Ethernet II");
     strcpy((char *) &bigBufferStringArray[0][1][0][0], "IPv4");
-
     strcpy((char *) &bigBufferStringArray[0][1][1][0], "TCP");
     strcpy((char *) &bigBufferStringArray[0][1][1][1], "ECHO");
     strcpy((char *) &bigBufferStringArray[0][1][1][2], "CHARGEN");
@@ -685,7 +684,6 @@ void fillBigBufferStringArray() {
     strcpy((char *) &bigBufferStringArray[0][1][1][18], "HTTPS");
     strcpy((char *) &bigBufferStringArray[0][1][1][19], "MICROSOFT DS");
     strcpy((char *) &bigBufferStringArray[0][1][1][20], "SOCKS");
-
     strcpy((char *) &bigBufferStringArray[0][1][2][0], "UDP");
     strcpy((char *) &bigBufferStringArray[0][1][2][1], "Echo");
     strcpy((char *) &bigBufferStringArray[0][1][2][2], "Chargen");
@@ -704,10 +702,8 @@ void fillBigBufferStringArray() {
     strcpy((char *) &bigBufferStringArray[0][1][2][15], "Traceroute");
     strcpy((char *) &bigBufferStringArray[0][1][2][16], "HSRP");
     strcpy((char *) &bigBufferStringArray[0][1][2][17], "MDNS");
-
     strcpy((char *) &bigBufferStringArray[0][1][3][0], "ICMP");
     strcpy((char *) &bigBufferStringArray[0][2][0][0], "ARP");
-
     strcpy((char *) &bigBufferStringArray[1][0][0][0], "802.3");
     strcpy((char *) &bigBufferStringArray[1][1][0][0], "LLC Sublayer Management or Individual");
     strcpy((char *) &bigBufferStringArray[1][2][0][0], "LLC Sublayer Management or Group");
@@ -739,10 +735,6 @@ char * verify3WHS(struct TCPPacket *temp, struct TCPPacket *temp2, struct TCPPac
                             temp -> isMarked = true;
                             temp2 -> isMarked = true;
                             temp3 -> isMarked = true;
-
-//                            printTCPPacket(temp);
-//                            printTCPPacket(temp2);
-//                            printTCPPacket(temp3);
 
                             char *_3WHSSYN = malloc(sizeof(u_char) * 20);
                             // FTP DATA
@@ -776,9 +768,6 @@ char * verifyTermination(struct TCPPacket *temp4, struct TCPPacket *temp5, int c
                         temp4 -> isMarked = true;
                         temp5 -> isMarked = true;
 
-//                        printTCPPacket(temp4);
-//                        printTCPPacket(temp5);
-
                         char *FINbyServer = malloc(sizeof(u_char) * 20);
                         sprintf(FINbyServer, "%d", temp5 -> frameNumber);
                         return FINbyServer;
@@ -792,9 +781,6 @@ char * verifyTermination(struct TCPPacket *temp4, struct TCPPacket *temp5, int c
                     if (temp4->frameNumber < temp5->frameNumber && temp4->isMarked == false && temp5->isMarked == false && strcasecmp(clientsSourcePort, temp5->dstPort) == 0  && (strcasecmp(temp5->flag, "FIN") == 0 || strcasecmp(temp5->flag, "RST") == 0)) {
                         temp4 -> isMarked = true;
                         temp5 -> isMarked = true;
-
-//                        printTCPPacket(temp4);
-//                        printTCPPacket(temp5);
 
                         char *FINbyClient = malloc(sizeof(u_char) * 20);
                         sprintf(FINbyClient, "%d", temp5 -> frameNumber);
@@ -1014,7 +1000,6 @@ int main() {
                 char choice2[20];
                 fgets(choice2, 20, stdin);
                 choice2[strlen(choice2) - 1] = '\0';
-//                puts(choice2);
 
                 int frametypeKey = -1;
                 int ethertypeKey = -1;
@@ -1039,7 +1024,7 @@ int main() {
                     break;
                 }
 
-                printf("bigBufferStringArray [%d] [%d] [%d] [%d] : %s\n", frametypeKey, ethertypeKey, protocolKey, portKey, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+//                printf("bigBufferStringArray [%d] [%d] [%d] [%d] : %s\n", frametypeKey, ethertypeKey, protocolKey, portKey, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
 
                 while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;

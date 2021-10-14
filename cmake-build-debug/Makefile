@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named PKS_Z1
+# Target rules for targets named PKS_Zadanie1_linux
 
 # Build rule for target.
-PKS_Z1: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 PKS_Z1
-.PHONY : PKS_Z1
+PKS_Zadanie1_linux: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 PKS_Zadanie1_linux
+.PHONY : PKS_Zadanie1_linux
 
 # fast build rule for target.
-PKS_Z1/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Z1.dir/build.make CMakeFiles/PKS_Z1.dir/build
-.PHONY : PKS_Z1/fast
+PKS_Zadanie1_linux/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Zadanie1_linux.dir/build.make CMakeFiles/PKS_Zadanie1_linux.dir/build
+.PHONY : PKS_Zadanie1_linux/fast
 
 main.o: main.c.o
 .PHONY : main.o
 
 # target to build an object file
 main.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Z1.dir/build.make CMakeFiles/PKS_Z1.dir/main.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Zadanie1_linux.dir/build.make CMakeFiles/PKS_Zadanie1_linux.dir/main.c.o
 .PHONY : main.c.o
 
 main.i: main.c.i
@@ -142,7 +142,7 @@ main.i: main.c.i
 
 # target to preprocess a source file
 main.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Z1.dir/build.make CMakeFiles/PKS_Z1.dir/main.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Zadanie1_linux.dir/build.make CMakeFiles/PKS_Zadanie1_linux.dir/main.c.i
 .PHONY : main.c.i
 
 main.s: main.c.s
@@ -150,7 +150,7 @@ main.s: main.c.s
 
 # target to generate assembly for a file
 main.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Z1.dir/build.make CMakeFiles/PKS_Z1.dir/main.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/PKS_Zadanie1_linux.dir/build.make CMakeFiles/PKS_Zadanie1_linux.dir/main.c.s
 .PHONY : main.c.s
 
 # Help Target
@@ -161,7 +161,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... PKS_Z1"
+	@echo "... PKS_Zadanie1_linux"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
