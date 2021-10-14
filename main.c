@@ -592,7 +592,7 @@ char* get802_3SAP(const u_char* packet, FILE* _802_3File)
     return _802_3Value;
 }
 
-char* get802_Protocol(const u_char* packet, FILE* _802_3File, bool isJustLLC)
+char* get802_3Protocol(const u_char* packet, FILE* _802_3File, bool isJustLLC)
 {
     int valueInTheFile = 0;
     int realValue1;
@@ -893,7 +893,7 @@ int main() {
                         // SNAP == AA == SNAP + LLC
                         else if (strcasecmp(_802_3Buff, "SNAP") == 0) {
                             printf("LLC + %s\n", _802_3Buff);
-                            char *_802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
+                            char *_802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, false);
                             printf("%s", _802_3ProtocolBuff);
 
                         }
@@ -902,7 +902,7 @@ int main() {
                         else {
                             printf("LLC\n");
                             printf("%s\n", _802_3Buff);
-                            char *_802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                            char *_802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, true);
                             printf("%s", _802_3ProtocolBuff);
                         }
 
@@ -1068,7 +1068,7 @@ int main() {
 
                             // AA
                             if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][10][0][0]) == 0) {
-                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
+                                _802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, false);
                                 if (strcmp(_802_3ProtocolBuff, (const char *) &bigBufferStringArray[1][5][1][0]) == 0) {
                                     printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                                     printf("\n%s ", frameTypeBuff);
@@ -1083,7 +1083,7 @@ int main() {
 
                             // Just LLC
                             else if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][5][0][0]) == 0) {
-                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                                _802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, true);
                                 if (strcmp(_802_3ProtocolBuff, (const char *) &bigBufferStringArray[1][5][1][0]) == 0) {
                                 printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                                 printf("\n%s ", frameTypeBuff);
