@@ -285,7 +285,7 @@ void printIPWithTheMostPacketsSent(struct IPv4Packet *start) {
 }
 
 void printMenu() {
-    printf("0 - Koniec\n");
+    printf("\n0 - Koniec\n");
     printf("1 - Vypis vsetkych komunikacii\n");
     printf("2 - Filtrovanie podla protokolu (viacere moznosti)\n");
     printf("3 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
@@ -404,6 +404,20 @@ char* getDstPort(const u_char* packet) {
     dstPort = malloc(sizeof(u_char) * 20);
     sprintf(dstPort, "%d", packet[36] * 256 + packet[37]);
     return dstPort;
+}
+
+char* getTCPFlag(const u_char* packet) {
+    if (packet[47] == 0x002)
+        return "SYN";
+    else if (packet[47] == 0x012)
+        return "SYN, ACK";
+    else if (packet[47] == 0x010)
+        return "ACK";
+    else if (packet[47] == 0x004  || packet[47] == 0x014)
+        return "RST";
+    else if (packet[47] == 0x011 || packet[47] == 0x019)
+        return "FIN";
+    return "NULL";
 }
 
 char* getFrameType(const u_char* packet) {
@@ -532,7 +546,7 @@ char* getARPOperation(const u_char* packet, FILE* ARPFile) {
 
     while ((c = getc(ARPFile)) != '-') {
         if (c == '#') {
-            fscanf(ARPFile, "%x", &valueInTheFile);
+            fscanf(ARPFile, "%x ", &valueInTheFile);
             if (realValue == valueInTheFile) {
                 while ((c = getc(ARPFile)) != '\n')
                     if (c != '\t')
@@ -562,7 +576,7 @@ char* get802_3SAP(const u_char* packet, FILE* _802_3File)
 
     while ((c = getc(_802_3File)) != '-') {
         if (c == '#') {
-            fscanf(_802_3File, "%x", &valueInTheFile);
+            fscanf(_802_3File, "%x ", &valueInTheFile);
             if (realValue1 == valueInTheFile && realValue2 == valueInTheFile) {
                 while ((c = getc(_802_3File)) != '\n')
                     if (c != '\t')
@@ -578,22 +592,49 @@ char* get802_3SAP(const u_char* packet, FILE* _802_3File)
     return _802_3Value;
 }
 
-char* getTCPFlag(const u_char* packet) {
-    if (packet[47] == 0x002)
-        return "SYN";
-    else if (packet[47] == 0x012)
-        return "SYN, ACK";
-    else if (packet[47] == 0x010)
-        return "ACK";
-    else if (packet[47] == 0x004  || packet[47] == 0x014)
-        return "RST";
-    else if (packet[47] == 0x011 || packet[47] == 0x019)
-        return "FIN";
-    return "NULL";
+char* get802_Protocol(const u_char* packet, FILE* _802_3File, bool isJustLLC)
+{
+    int valueInTheFile = 0;
+    int realValue1;
+    int realValue2;
+
+    if (isJustLLC == true) {
+        realValue1 = packet[17];
+        realValue2 = packet[18];
+    }
+
+    else {
+        realValue1 = packet[22];
+        realValue2 = packet[23];
+    }
+
+    rewind(_802_3File);
+    char c;
+    char _802_3ProtocolBuff[50] = {0 };
+    int i = 0;
+
+    while ((c = getc(_802_3File)) != '-') {
+        if (c == '#') {
+            fscanf(_802_3File, "%x ", &valueInTheFile);
+            if (realValue1 == valueInTheFile && realValue2 == valueInTheFile) {
+                while ((c = getc(_802_3File)) != '\n')
+                    if (c != '\t')
+                        _802_3ProtocolBuff[i++] = c;
+                break;
+            }
+        }
+    }
+    char* _802_3Protocol;
+    _802_3Protocol = malloc(sizeof(u_char) * i);
+    sprintf(_802_3Protocol, "%s", _802_3ProtocolBuff);
+
+    return _802_3Protocol;
 }
 
-void openTxtFiles(FILE **_802_3, FILE **ethertypes, FILE **IPProtocols, FILE **TCPPorts, FILE **UDPPorts, FILE **ICMPPorts, FILE **ARPOperation) {
+void openTxtFiles(FILE **_802_3, FILE **_802_3Protocol, FILE **ethertypes, FILE **IPProtocols, FILE **TCPPorts, FILE **UDPPorts, FILE **ICMPPorts, FILE **ARPOperation) {
+
     if (((*_802_3) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3SAPs.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3SAPs.txt suboru.\n");
+    if (((*_802_3Protocol) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3Protocols.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3Protocols.txt suboru.\n");
     if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
     if (((*IPProtocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/IPProtocols.txt", "r")) == NULL) printf("Chyba pri otvoreni IPProtocols.txt suboru.\n");
     if (((*TCPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/TCPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni TCPPorts.txt suboru.\n");
@@ -658,21 +699,24 @@ void fillBigBufferStringArray() {
     strcpy((char *) &bigBufferStringArray[0][2][0][0], "ARP");
 
     strcpy((char *) &bigBufferStringArray[1][0][0][0], "802.3");
-    strcpy((char *) &bigBufferStringArray[1][0][1][0], "LLC Sublayer Management or Individual");
-    strcpy((char *) &bigBufferStringArray[1][0][2][0], "LLC Sublayer Management or Group");
-    strcpy((char *) &bigBufferStringArray[1][0][3][0], "IP (DOD Internet Protocol)");
-    strcpy((char *) &bigBufferStringArray[1][0][4][0], "PROWAY (IEC 955)");
-    strcpy((char *) &bigBufferStringArray[1][0][5][0], "STP");
-    strcpy((char *) &bigBufferStringArray[1][0][6][0], "MMS (Manufacturing Message Service)");
-    strcpy((char *) &bigBufferStringArray[1][0][7][0], "ISI IP");
-    strcpy((char *) &bigBufferStringArray[1][0][8][0], "X.25 PLP (ISO 8208)");
-    strcpy((char *) &bigBufferStringArray[1][0][9][0], "PROWAY (IEC 955) Active Station List Maintenance");
-    strcpy((char *) &bigBufferStringArray[1][0][10][0], "SNAP");
-    strcpy((char *) &bigBufferStringArray[1][0][11][0], "IPX (Novell NetWare)");
-    strcpy((char *) &bigBufferStringArray[1][0][12][0], "LAN Management");
-    strcpy((char *) &bigBufferStringArray[1][0][13][0], "ISO Network Layer Protocols");
-    strcpy((char *) &bigBufferStringArray[1][0][14][0], "NULL SAP");
-    strcpy((char *) &bigBufferStringArray[1][0][15][0], "Global DSAP");
+    strcpy((char *) &bigBufferStringArray[1][1][0][0], "LLC Sublayer Management or Individual");
+    strcpy((char *) &bigBufferStringArray[1][2][0][0], "LLC Sublayer Management or Group");
+    strcpy((char *) &bigBufferStringArray[1][3][0][0], "IP (DOD Internet Protocol)");
+    strcpy((char *) &bigBufferStringArray[1][4][0][0], "PROWAY (IEC 955)");
+    strcpy((char *) &bigBufferStringArray[1][5][0][0], "BPDU (Bridge PDU / 802.1 Spanning Tree)");
+    strcpy((char *) &bigBufferStringArray[1][5][1][0], "STP");
+    strcpy((char *) &bigBufferStringArray[1][6][0][0], "MMS (Manufacturing Message Service)");
+    strcpy((char *) &bigBufferStringArray[1][7][0][0], "ISI IP");
+    strcpy((char *) &bigBufferStringArray[1][8][0][0], "X.25 PLP (ISO 8208)");
+    strcpy((char *) &bigBufferStringArray[1][9][0][0], "PROWAY (IEC 955) Active Station List Maintenance");
+    strcpy((char *) &bigBufferStringArray[1][10][0][0], "SNAP");
+    strcpy((char *) &bigBufferStringArray[1][10][1][0], "STP");
+    strcpy((char *) &bigBufferStringArray[1][11][0][0], "IPX (Novell NetWare)");
+    strcpy((char *) &bigBufferStringArray[1][12][0][0], "IPX (Novell NetWare)");
+    strcpy((char *) &bigBufferStringArray[1][13][0][0], "LAN Management");
+    strcpy((char *) &bigBufferStringArray[1][14][0][0], "ISO Network Layer Protocols");
+    strcpy((char *) &bigBufferStringArray[1][15][0][0], "NULL SAP");
+    strcpy((char *) &bigBufferStringArray[1][16][0][0], "Global DSAP");
 
 }
 
@@ -794,18 +838,19 @@ char * connectARPPairs (struct ARPPacket *temp, struct ARPPacket *temp2) {
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-2.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
     FILE *_802_3;
+    FILE *_802_3Protocol;
     FILE *ethertypes;
     FILE *IPProtocols;
     FILE *TCPPorts;
     FILE *UDPPorts;
     FILE *ICMPPorts;
     FILE *ARPOperation;
-    openTxtFiles(&_802_3, &ethertypes, &IPProtocols, &TCPPorts, &UDPPorts, &ICMPPorts, &ARPOperation);
+    openTxtFiles(&_802_3, &_802_3Protocol, &ethertypes, &IPProtocols, &TCPPorts, &UDPPorts, &ICMPPorts, &ARPOperation);
     fillBigBufferStringArray();
 
     struct pcap_pkthdr* pcapHeader;
@@ -832,8 +877,6 @@ int main() {
                 while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
                     char* frameTypeBuff = getFrameType(packet);
-                    char* ethertypeBuff = getEtherType(packet, ethertypes);
-                    char* protocolBuff;
 
                     // Je 802.3
                     if (strcasecmp(frameTypeBuff, "802.3") == 0) {
@@ -853,13 +896,19 @@ int main() {
                         }
 
                         // SNAP == AA == SNAP + LLC
-                        else if (strcasecmp(_802_3Buff, "SNAP") == 0)
-                            printf("LLC + %s", _802_3Buff);
+                        else if (strcasecmp(_802_3Buff, "SNAP") == 0) {
+                            printf("LLC + %s\n", _802_3Buff);
+                            char *_802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
+                            printf("%s", _802_3ProtocolBuff);
+
+                        }
 
                         // LLC, ani jeden
                         else {
                             printf("LLC\n");
                             printf("%s", _802_3Buff);
+                            char *_802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                            printf("%s", _802_3ProtocolBuff);
                         }
 
                         printMACAddress(packet);
@@ -867,6 +916,7 @@ int main() {
 
                     // Je Ethernet II
                     else if (strcasecmp(frameTypeBuff, "Ethernet II") == 0) {
+                        char* ethertypeBuff = getEtherType(packet, ethertypes);
 
                         // Je ARP, vypiseme ARP-Request/Reply,IP, MAC
                         if (strcasecmp(ethertypeBuff, "ARP") == 0) {
@@ -891,15 +941,14 @@ int main() {
                             unitedARPPrint(pcapHeader, packet, frames, frameTypeBuff, ethertypeBuff);
                         }
 
-
                         // Je IP
-                        if (strcasecmp(ethertypeBuff, "ARP") != 0) {
+                        else if (strcasecmp(ethertypeBuff, "ARP") != 0) {
                             printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                             printf("\n%s", frameTypeBuff);
                             printMACAddress(packet);
                             printf("%s\n", ethertypeBuff);
                             printIPAdresses(packet);
-                            protocolBuff = getProtocol(packet, IPProtocols);
+                            char* protocolBuff = getProtocol(packet, IPProtocols);
                             printf("%s\n", protocolBuff);
 
                             char* srcIPBuff = getSrcIP(packet);
@@ -981,7 +1030,7 @@ int main() {
                     break;
                 }
 
-//                printf("bigBufferStringArray [%d] [%d] [%d] [%d] : %s\n", frametypeKey, ethertypeKey, protocolKey, portKey, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+                printf("bigBufferStringArray [%d] [%d] [%d] [%d] : %s\n", frametypeKey, ethertypeKey, protocolKey, portKey, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
 
                 while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
@@ -1018,18 +1067,41 @@ int main() {
                     else if (frametypeKey == 1) {
                         char* frameTypeBuff = getFrameType(packet);
                         char* _802_3Buff = get802_3SAP(packet, _802_3);
-                        if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][0]) == 0) {
+                        char *_802_3ProtocolBuff;
+
+                        // SNAP == AA == SNAP + LLC
+                        if (frametypeKey == 1 && ethertypeKey == 10) {
+                            if (strcasecmp(_802_3Buff, "SNAP") == 0)
+                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
+                        }
+
+                        // Not RAW, not SNAP + LLC, it is just LLC
+                        else if (frametypeKey == 1 && ethertypeKey != 10 && ethertypeKey != 15) {
+                            if (strcasecmp(_802_3Buff, "SNAP") && strcasecmp(_802_3Buff, "Global DSAP"))
+                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                        }
+
+                        else
+                            _802_3ProtocolBuff = "EMPTY";
+
+                        if (strcasecmp(frameTypeBuff, "802.3") == 0) {
                             printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                             printf("\n%s ", frameTypeBuff);
 
-                            if (strcasecmp(_802_3Buff, "Global DSAP") == 0)
-                                printf("RAW\n %s", _802_3Buff);
+                            // SNAP == AA == SNAP + LLC
+                            if (frametypeKey == 1 && ethertypeKey == 10) {
+                                printf("SNAP + LLC\n%s\n", _802_3Buff);
+                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, false);
+                                printf("%s", _802_3ProtocolBuff);
+                            }
 
-                            else if (strcasecmp(_802_3Buff, "SNAP") == 0)
-                                printf("LLC + %s", _802_3Buff);
-
-                            else
-                                printf("LLC\n %s", _802_3Buff);
+                            // LLC, ani jeden
+                            else if (frametypeKey == 1 && ethertypeKey != 10 && ethertypeKey != 16) {
+                                printf("LLC\n");
+                                printf("%s", _802_3Buff);
+                                _802_3ProtocolBuff = get802_Protocol(packet, _802_3Protocol, true);
+                                printf("%s", _802_3ProtocolBuff);
+                            }
 
                             printMACAddress(packet);
                             printHexadecimal(pcapHeader->len, packet);
@@ -1110,7 +1182,7 @@ int main() {
                         pcap_close(pcap_file);
                     }
 
-                    // ARP
+                    // ARP [ 100 % ]
                     if (strcasecmp("ARP", choice2) == 0) {
 
                         struct ARPPacket *temp = ARPhead;
