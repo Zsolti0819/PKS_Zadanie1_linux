@@ -4,8 +4,7 @@
 #include <stdbool.h>
 #include <pcap/pcap.h>
 
-char***** bigBufferStringArray[2][30][30][30];
-bool debugMode = false;
+bool debugMode = true;
 
 struct IPv4Packet {
     char* srcIPAdress;
@@ -359,21 +358,6 @@ void printSrcPortAndDstPort(const u_char *packet) {
     printf("zdrojovy port: %d\ncielovy port: %d\n", packet[34] * 256 + packet[35], packet[36] * 256 + packet[37]);
 }
 
-int getSearchCount(const struct pcap_pkthdr *pcapHeader, const u_char *packet, int frames, int count, char *frameTypeBuff, char *ethertype_buff, char *protocolBuff, char *portBuff) {
-    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-    printf("\n%s", frameTypeBuff);
-    printMACAddress(packet);
-    printf("%s\n", ethertype_buff);
-    printIPAdresses(packet);
-    printf("%s\n", protocolBuff);
-    printf("%s\n", portBuff);
-    printSrcPortAndDstPort(packet);
-    printHexadecimal(pcapHeader->len, packet);
-    count++;
-    printf("\n=============================================================\n");
-    return count;
-}
-
 void unitedARPPrint(const struct pcap_pkthdr *pcapHeader, const u_char *packet, int frames, char *frameTypeBuff, char *ethertypeBuff) {
     printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
     printf("\n%s\n", frameTypeBuff);
@@ -650,78 +634,6 @@ void openTxtFiles(FILE **_802_3, FILE **_802_3Protocol, FILE **ethertypes, FILE 
     if (((*ARPOperation) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ARPValues.txt", "r")) == NULL) printf("Chyba pri otvoreni ARPValues.txt suboru.\n");
 }
 
-void fillBigBufferStringArray() {
-    int i, j, k, l;
-    for (i = 0; i < 2; i++)
-        for (j = 0; j < 30; j++)
-            for (k = 0; k < 30; k++)
-                for (l = 0; l < 30; l++)
-                        strcpy((char *) &bigBufferStringArray[i][j][k][l], "-");
-
-    strcpy((char *) &bigBufferStringArray[0][1][0][0], "Ethernet II");
-    strcpy((char *) &bigBufferStringArray[0][1][0][0], "IPv4");
-    strcpy((char *) &bigBufferStringArray[0][1][1][0], "TCP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][1], "ECHO");
-    strcpy((char *) &bigBufferStringArray[0][1][1][2], "CHARGEN");
-    strcpy((char *) &bigBufferStringArray[0][1][1][3], "FTP DATA");
-    strcpy((char *) &bigBufferStringArray[0][1][1][4], "FTP CONTROL");
-    strcpy((char *) &bigBufferStringArray[0][1][1][5], "SSH");
-    strcpy((char *) &bigBufferStringArray[0][1][1][6], "TELNET");
-    strcpy((char *) &bigBufferStringArray[0][1][1][7], "SMTP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][8], "DOMAIN");
-    strcpy((char *) &bigBufferStringArray[0][1][1][9], "FINGER");
-    strcpy((char *) &bigBufferStringArray[0][1][1][10], "HTTP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][11], "POP3");
-    strcpy((char *) &bigBufferStringArray[0][1][1][12], "SUNRPC");
-    strcpy((char *) &bigBufferStringArray[0][1][1][13], "NNTP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][14], "SMB");
-    strcpy((char *) &bigBufferStringArray[0][1][1][15], "IMAP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][16], "BGP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][17], "LDAP");
-    strcpy((char *) &bigBufferStringArray[0][1][1][18], "HTTPS");
-    strcpy((char *) &bigBufferStringArray[0][1][1][19], "MICROSOFT DS");
-    strcpy((char *) &bigBufferStringArray[0][1][1][20], "SOCKS");
-    strcpy((char *) &bigBufferStringArray[0][1][2][0], "UDP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][1], "Echo");
-    strcpy((char *) &bigBufferStringArray[0][1][2][2], "Chargen");
-    strcpy((char *) &bigBufferStringArray[0][1][2][3], "Time");
-    strcpy((char *) &bigBufferStringArray[0][1][2][4], "DNS");
-    strcpy((char *) &bigBufferStringArray[0][1][2][5], "Bootpc DHCP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][6], "Bootpc DHCP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][7], "TFTP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][8], "NBNS");
-    strcpy((char *) &bigBufferStringArray[0][1][2][9], "Netbios dgm");
-    strcpy((char *) &bigBufferStringArray[0][1][2][10], "SNMP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][11], "SNMP trap");
-    strcpy((char *) &bigBufferStringArray[0][1][2][12], "Isakmp");
-    strcpy((char *) &bigBufferStringArray[0][1][2][13], "syslog");
-    strcpy((char *) &bigBufferStringArray[0][1][2][14], "RIP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][15], "Traceroute");
-    strcpy((char *) &bigBufferStringArray[0][1][2][16], "HSRP");
-    strcpy((char *) &bigBufferStringArray[0][1][2][17], "MDNS");
-    strcpy((char *) &bigBufferStringArray[0][1][3][0], "ICMP");
-    strcpy((char *) &bigBufferStringArray[0][2][0][0], "ARP");
-    strcpy((char *) &bigBufferStringArray[1][0][0][0], "802.3");
-    strcpy((char *) &bigBufferStringArray[1][1][0][0], "LLC Sublayer Management or Individual");
-    strcpy((char *) &bigBufferStringArray[1][2][0][0], "LLC Sublayer Management or Group");
-    strcpy((char *) &bigBufferStringArray[1][3][0][0], "IP (DOD Internet Protocol)");
-    strcpy((char *) &bigBufferStringArray[1][4][0][0], "PROWAY (IEC 955)");
-    strcpy((char *) &bigBufferStringArray[1][5][0][0], "BPDU (Bridge PDU / 802.1 Spanning Tree)");
-    strcpy((char *) &bigBufferStringArray[1][5][1][0], "STP");
-    strcpy((char *) &bigBufferStringArray[1][6][0][0], "MMS (Manufacturing Message Service)");
-    strcpy((char *) &bigBufferStringArray[1][7][0][0], "ISI IP");
-    strcpy((char *) &bigBufferStringArray[1][8][0][0], "X.25 PLP (ISO 8208)");
-    strcpy((char *) &bigBufferStringArray[1][9][0][0], "PROWAY (IEC 955) Active Station List Maintenance");
-    strcpy((char *) &bigBufferStringArray[1][10][0][0], "SNAP");
-    strcpy((char *) &bigBufferStringArray[1][11][0][0], "IPX (Novell NetWare)");
-    strcpy((char *) &bigBufferStringArray[1][12][0][0], "IPX (Novell NetWare)");
-    strcpy((char *) &bigBufferStringArray[1][13][0][0], "LAN Management");
-    strcpy((char *) &bigBufferStringArray[1][14][0][0], "ISO Network Layer Protocols");
-    strcpy((char *) &bigBufferStringArray[1][15][0][0], "NULL SAP");
-    strcpy((char *) &bigBufferStringArray[1][16][0][0], "Global DSAP");
-
-}
-
 char * verify3WHS(struct TCPPacket *temp, struct TCPPacket *temp2, struct TCPPacket *temp3) {
     while (temp != NULL) {
         if (strcasecmp(temp -> flag, "SYN") == 0 && temp -> isMarked == false) {
@@ -858,7 +770,7 @@ char * connectARPPairs (struct ARPPacket *temp, struct ARPPacket *temp2) {
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-2.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -871,7 +783,6 @@ int main() {
     FILE *ICMPPorts;
     FILE *ARPOperation;
     openTxtFiles(&_802_3, &_802_3Protocol, &ethertypes, &IPProtocols, &TCPPorts, &UDPPorts, &ICMPPorts, &ARPOperation);
-    fillBigBufferStringArray();
 
     struct pcap_pkthdr* pcapHeader;
     const u_char* packet;
@@ -1018,110 +929,149 @@ int main() {
                 }
 
                 printf("Zadajte protokol.\n");
-                char choice2[20];
-                fgets(choice2, 20, stdin);
+                char choice2[50];
+                fgets(choice2, 50, stdin);
                 choice2[strlen(choice2) - 1] = '\0';
+                puts(choice2);
 
-                int frametypeKey = -1;
-                int ethertypeKey = -1;
-                int protocolKey = -1;
-                int portKey = -1;
                 int count = 0;
-
-                int i, j, k, l;
-                for (i = 0; i < 2; i++)
-                    for (j = 0; j < 30; j++)
-                        for (k = 0; k < 30; k++)
-                            for (l = 0; l < 30; l++)
-                                if (strcasecmp(choice2, (const char *) &bigBufferStringArray[i][j][k][l]) == 0) {
-                                    frametypeKey = i;
-                                    ethertypeKey = j;
-                                    protocolKey = k;
-                                    portKey = l;
-                                }
-
-                if (frametypeKey == -1 || ethertypeKey == -1 || protocolKey == -1 || portKey == -1) {
-                    printf("Taky protokol neexistuje alebo neviem ho najst\n");
-                    break;
-                }
-
-                if (debugMode)
-                    printf("bigBufferStringArray [%d] [%d] [%d] [%d] : %s\n", frametypeKey, ethertypeKey, protocolKey, portKey, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
 
                 while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                     frames++;
+                    char* frameTypeBuff = getFrameType(packet);
 
                     // Ethernet II
-                    if (frametypeKey == 0) {
-                        char* frameTypeBuff = getFrameType(packet);
+                    if (strcasecmp(frameTypeBuff, "Ethernet II") == 0) {
                         char* ethertypeBuff = getEtherType(packet, ethertypes);
-                        char* protocolBuff = getProtocol(packet, IPProtocols);
 
-                        //TCP
-                        if (frametypeKey == 0 && ethertypeKey == 1 && protocolKey == 1) {
-                            char* portBuff = getTCPOrUDPPort(packet, TCPPorts);
-                            if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0)
-                                count = getSearchCount(pcapHeader, packet, frames, count, frameTypeBuff, ethertypeBuff, protocolBuff, portBuff);
-                        }
+                        // IPv4
+                        if (strcasecmp(ethertypeBuff, "IPv4") == 0) {
+                            char* protocolBuff = getProtocol(packet, IPProtocols);
 
-                        // UDP
-                        else if (frametypeKey == 0 && ethertypeKey == 1 && protocolKey == 2) {
-                            char* portBuff = getTCPOrUDPPort(packet, UDPPorts);
-                            if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0)
-                                count = getSearchCount(pcapHeader, packet, frames, count, frameTypeBuff, ethertypeBuff, protocolBuff, portBuff);
-                        }
-
-                        // ICMP
-                        else if (frametypeKey == 0 && ethertypeKey == 1 && protocolKey == 3) {
-                            char* portBuff = getICMPPort(packet, ICMPPorts);
-                            if (strcasecmp(protocolBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][0]) == 0)
-                                count = getSearchCount(pcapHeader, packet, frames, count, frameTypeBuff, ethertypeBuff, protocolBuff, portBuff);
-                        }
-                    }
-
-                    // 802.3
-                    else if (frametypeKey == 1) {
-                        char* frameTypeBuff = getFrameType(packet);
-                        char* _802_3Buff = get802_3SAP(packet, _802_3);
-                        char *_802_3ProtocolBuff;
-
-                        if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][5][0][0]) == 0 ||
-                            strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][10][0][0]) == 0) {
-
-                            // AA
-                            if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][10][0][0]) == 0) {
-                                _802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, false);
-                                if (strcmp(_802_3ProtocolBuff, (const char *) &bigBufferStringArray[1][5][1][0]) == 0) {
+                            //TCP
+                            if (strcasecmp(protocolBuff, "TCP") == 0) {
+                                char* portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                                if (strcasecmp(portBuff, choice2) == 0) {
                                     printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                                    printf("\n%s ", frameTypeBuff);
-                                    printf("%s + LLC\n", _802_3Buff);
-                                    printf("%s", _802_3ProtocolBuff);
+                                    printf("\n%s", frameTypeBuff);
                                     printMACAddress(packet);
+                                    printf("%s\n", ethertypeBuff);
+                                    printIPAdresses(packet);
+                                    printf("%s\n", protocolBuff);
+                                    printf("%s\n", portBuff);
+                                    printSrcPortAndDstPort(packet);
                                     printHexadecimal(pcapHeader->len, packet);
                                     count++;
                                     printf("\n=============================================================\n");
                                 }
+
                             }
 
-                            // Just LLC
-                            else if (strcasecmp(_802_3Buff, (const char *) &bigBufferStringArray[1][5][0][0]) == 0) {
-                                _802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, true);
-                                if (strcmp(_802_3ProtocolBuff, (const char *) &bigBufferStringArray[1][5][1][0]) == 0) {
-                                printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
-                                printf("\n%s ", frameTypeBuff);
-                                printf("LLC\n");
-                                printf("%s\n", _802_3Buff);
-                                printf("%s", _802_3ProtocolBuff);
-                                printMACAddress(packet);
-                                printHexadecimal(pcapHeader->len, packet);
-                                count++;
-                                printf("\n=============================================================\n");
+                            // UDP
+                            else if (strcasecmp(protocolBuff, "UDP") == 0) {
+                                char* portBuff = getTCPOrUDPPort(packet, UDPPorts);
+                                if (strcasecmp(portBuff, choice2) == 0) {
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s", frameTypeBuff);
+                                    printMACAddress(packet);
+                                    printf("%s\n", ethertypeBuff);
+                                    printIPAdresses(packet);
+                                    printf("%s\n", protocolBuff);
+                                    printf("%s\n", portBuff);
+                                    printSrcPortAndDstPort(packet);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    count++;
+                                    printf("\n=============================================================\n");
                                 }
+
+                            }
+
+                            // ICMP
+                            else if (strcasecmp(protocolBuff, "ICMP") == 0) {
+                                char* portBuff = getICMPPort(packet, ICMPPorts);
+                                if (strcasecmp(protocolBuff, choice2) == 0) {
+                                    printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                    printf("\n%s", frameTypeBuff);
+                                    printMACAddress(packet);
+                                    printf("%s\n", ethertypeBuff);
+                                    printIPAdresses(packet);
+                                    printf("%s\n", protocolBuff);
+                                    printf("%s\n", portBuff);
+                                    printHexadecimal(pcapHeader->len, packet);
+                                    count++;
+                                    printf("\n=============================================================\n");
+                                }
+
+                            }
+                        }
+                        if (strcasecmp(ethertypeBuff, "ARP") == 0) {
+                            if (strcasecmp(ethertypeBuff, choice2) == 0) {
+                                char *ARPBuff = getARPOperation(packet, ARPOperation);
+                                char *ARPDSTIP = getARPdstIP(packet);
+                                char *ARPSRCIP = getARPsrcIP(packet);
+                                char *ARPSRCMAC = getARPsrcMAC(packet);
+                                char *ARPDSTMAC = getARPdstMAC(packet);
+
+                                // Request
+                                if (strcasecmp(ARPBuff, "Request") == 0) {
+                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPDSTIP, ARPDSTMAC);
+                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                }
+
+                                // Reply
+                                else {
+                                    printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, ARPSRCIP, ARPSRCMAC);
+                                    printf("Zdrojova IP: %s, Cielova IP: %s\n", ARPSRCIP, ARPDSTIP);
+                                }
+
+                                unitedARPPrint(pcapHeader, packet, frames, frameTypeBuff, ethertypeBuff);
+                                printHexadecimal(pcapHeader->len, packet);
+                                printf("\n=============================================================\n");
+                                count++;
                             }
                         }
                     }
+
+                    // 802.3
+                    else if (strcasecmp(frameTypeBuff, "802.3") == 0) {
+                        char* _802_3Buff = get802_3SAP(packet, _802_3);
+                            // AA
+                            if (strcasecmp(_802_3Buff, "SNAP") == 0) {
+                                char *_802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, false);
+                                if (strcmp(_802_3ProtocolBuff, "STP") == 0) {
+                                    if (strcmp(_802_3ProtocolBuff, choice2) == 0) {
+                                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                        printf("\n%s ", frameTypeBuff);
+                                        printf("%s + LLC\n", _802_3Buff);
+                                        printf("%s", _802_3ProtocolBuff);
+                                        printMACAddress(packet);
+                                        printHexadecimal(pcapHeader->len, packet);
+                                        count++;
+                                        printf("\n=============================================================\n");
+                                    }
+                                }
+                            }
+
+                            // Just LLC
+                            else if (strcasecmp(_802_3Buff, "BPDU (Bridge PDU / 802.1 Spanning Tree)") == 0) {
+                                char *_802_3ProtocolBuff = get802_3Protocol(packet, _802_3Protocol, true);
+                                if (strcmp(_802_3ProtocolBuff, "STP") == 0) {
+                                    if (strcmp(_802_3ProtocolBuff, choice2) == 0){
+                                        printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                                        printf("\n%s ", frameTypeBuff);
+                                        printf("LLC\n");
+                                        printf("%s\n", _802_3Buff);
+                                        printf("%s", _802_3ProtocolBuff);
+                                        printMACAddress(packet);
+                                        printHexadecimal(pcapHeader->len, packet);
+                                        count++;
+                                        printf("\n=============================================================\n");
+                                    }
+                                }
+                            }
+                    }
                 }
-                printf("Tento subor obsahoval %d protokolov typu %s.\n", count, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+                printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
                 frames = 0;
                 pcap_close(pcap_file);
 
@@ -1140,25 +1090,6 @@ int main() {
                     strcasecmp(choice2, "FTP CONTROL") == 0 || strcasecmp(choice2, "FTP DATA") == 0 || strcasecmp(choice2, "SSH") == 0 ||
                     strcasecmp(choice2, "TFTP") == 0 || strcasecmp(choice2, "ICMP") == 0 || strcasecmp(choice2, "ARP") == 0) {
 
-                    int frametypeKey = -1;
-                    int ethertypeKey = -1;
-                    int protocolKey = -1;
-                    int portKey = -1;
-
-                    int i, j, k, l;
-                    for (i = 0; i < 2; i++)
-                        for (j = 0; j < 30; j++)
-                            for (k = 0; k < 30; k++)
-                                for (l = 0; l < 30; l++)
-                                    if (strcasecmp(choice2, (const char *) &bigBufferStringArray[i][j][k][l]) == 0) {
-                                        frametypeKey = i;
-                                        ethertypeKey = j;
-                                        protocolKey = k;
-                                        portKey = l;
-                                    }
-                    if (debugMode)
-                        printf("bigBufferStringArray [%d] [%d] [%d] [%d] : %s\n", frametypeKey, ethertypeKey, protocolKey, portKey, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
-
                     // If not ICMP, insert all frames to a list if meets port criteria
                     if (strcasecmp(choice2, "ICMP")) {
                         if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
@@ -1167,28 +1098,38 @@ int main() {
                         }
                         while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                             frames++;
-                            // TCP
-                            if (frametypeKey == 0 && ethertypeKey == 1 && protocolKey == 1) {
-                                char *portBuff = getTCPOrUDPPort(packet, TCPPorts);
-                                if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0 && findTCPPacketInList(TCPhead, frames) == false)
-                                    insertTCPPacketToList(&TCPhead, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
-                            }
+                            char *frameTypeBuff = getFrameType(packet);
 
-                            // UDP
-                            else if (frametypeKey == 0 && ethertypeKey == 1 && protocolKey == 2) {
-                                char *portBuff = getTCPOrUDPPort(packet, UDPPorts);
-                                if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0 && findUDPPacketInList(UDPhead, frames) == false)
-                                    insertUDPPacketToList(&UDPhead, getSrcPort(packet), frames);
-                            }
-
-                            // ARP
-                            else if (frametypeKey == 0 && ethertypeKey == 2 && protocolKey == 0) {
+                            // Ethernet II
+                            if (strcasecmp(frameTypeBuff, "Ethernet II") == 0) {
                                 char *ethertypeBuff = getEtherType(packet, ethertypes);
-                                if (strcasecmp(ethertypeBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0 && findARPPacketInList(ARPhead, frames) == false)
-                                    insertARPPacketToList(&ARPhead, frames, getARPsrcIP(packet), getARPdstIP(packet), getARPsrcMAC(packet), getARPdstMAC(packet),
-                                                          getARPOperation(packet, ARPOperation));
+
+                                // IPv4
+                                if (strcasecmp(ethertypeBuff, "IPv4") == 0) {
+                                    char *protocolBuff = getProtocol(packet, IPProtocols);
+
+                                    // TCP
+                                    if (strcasecmp(protocolBuff, "TCP") == 0) {
+                                        char *portBuff = getTCPOrUDPPort(packet, TCPPorts);
+                                        if (strcasecmp(portBuff, choice2) == 0 && findTCPPacketInList(TCPhead, frames) == false)
+                                            insertTCPPacketToList(&TCPhead, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
+                                    }
+
+                                    // UDP
+                                    else if (strcasecmp(protocolBuff, "UDP") == 0) {
+                                        char *portBuff = getTCPOrUDPPort(packet, UDPPorts);
+                                        if (strcasecmp(portBuff, choice2) == 0 && findUDPPacketInList(UDPhead, frames) == false)
+                                            insertUDPPacketToList(&UDPhead, getSrcPort(packet), frames);
+                                        }
+                                    }
+
+                                // ARP
+                                else if (strcasecmp(ethertypeBuff, "ARP") == 0) {
+                                    if (findARPPacketInList(ARPhead, frames) == false)
+                                        insertARPPacketToList(&ARPhead, frames, getARPsrcIP(packet), getARPdstIP(packet), getARPsrcMAC(packet), getARPdstMAC(packet), getARPOperation(packet, ARPOperation));
+                                    }
+                                }
                             }
-                        }
                         frames = 0;
                         pcap_close(pcap_file);
                     }
@@ -1462,7 +1403,7 @@ int main() {
                             char *protocolBuff = getProtocol(packet, IPProtocols);
                             char *portBuff = getICMPPort(packet, ICMPPorts);
 
-                            if (strcasecmp(protocolBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0) {
+                            if (strcasecmp(protocolBuff, "ICMP") == 0) {
                                 printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                                 printf("\n%s", frameTypeBuff);
                                 printMACAddress(packet);
@@ -1585,20 +1526,20 @@ int main() {
                         int completeComFrameCount = 0;
                         while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                             char* portBuff = getTCPOrUDPPort(packet, TCPPorts);
-                            if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0 && (strcasecmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcasecmp(getDstPort(packet), firstCompleteComPort) == 0))
+                            if (strcasecmp(portBuff, choice2) == 0 && (strcasecmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcasecmp(getDstPort(packet), firstCompleteComPort) == 0))
                                 completeComFrameCount++;
                         }
                         pcap_close(pcap_file);
 
                         if (completeComFrameCount != 0) {
                             printf("\n=============================================================\n");
-                            printf("Prva kompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey], firstCompleteComPort, completeComFrameCount);
+                            printf("Prva kompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", choice2, firstCompleteComPort, completeComFrameCount);
                             printf("\n=============================================================\n");
                         }
 
                         else {
                             printf("\n=============================================================\n");
-                            printf("Subor neobsahoval ani jednu kompletnu %s komunikaciu", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+                            printf("Subor neobsahoval ani jednu kompletnu %s komunikaciu", choice2);
                             printf("\n=============================================================\n");
                         }
 
@@ -1616,7 +1557,7 @@ int main() {
                             char* protocolBuff = getProtocol(packet, IPProtocols);
                             char* portBuff = getTCPOrUDPPort(packet, TCPPorts);
 
-                            if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0 && (strcasecmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcasecmp(getDstPort(packet), firstCompleteComPort) == 0)) {
+                            if (strcasecmp(portBuff, choice2) == 0 && (strcasecmp(getSrcPort(packet), firstCompleteComPort) == 0 || strcasecmp(getDstPort(packet), firstCompleteComPort) == 0)) {
                                 printedCompleteComCount++;
                                 if (completeComFrameCount > 20 && (printedCompleteComCount <= 10 || printedCompleteComCount > completeComFrameCount - 10) || completeComFrameCount <= 20) {
                                     printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
@@ -1643,18 +1584,18 @@ int main() {
                         int incompleteComFrameCount = 0;
                         while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
                             char* portBuff = getTCPOrUDPPort(packet, TCPPorts);
-                            if (strcasecmp(portBuff, (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]) == 0 && (strcasecmp(getSrcPort(packet), firstIncompleteComPort) == 0 || strcasecmp(getDstPort(packet), firstIncompleteComPort) == 0))
+                            if (strcasecmp(portBuff, choice2) == 0 && (strcasecmp(getSrcPort(packet), firstIncompleteComPort) == 0 || strcasecmp(getDstPort(packet), firstIncompleteComPort) == 0))
                                 incompleteComFrameCount++;
                         }
                         pcap_close(pcap_file);
 
                         if (incompleteComFrameCount != 0) {
-                            printf("Prva nekompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey], firstIncompleteComPort, incompleteComFrameCount);
+                            printf("Prva nekompletna %s komunikacia je pod portom %s, obsahuje %d ramcov", choice2, firstIncompleteComPort, incompleteComFrameCount);
                             printf("\n=============================================================\n");
                         }
 
                         else {
-                            printf("Subor neobsahoval ani jednu nekompletnu %s komunikaciu", (const char *) &bigBufferStringArray[frametypeKey][ethertypeKey][protocolKey][portKey]);
+                            printf("Subor neobsahoval ani jednu nekompletnu %s komunikaciu", choice2);
                             printf("\n=============================================================\n");
                         }
 
@@ -1692,9 +1633,6 @@ int main() {
                         pcap_close(pcap_file);
                         deleteTCPPacketList(&TCPhead);
                         frames = 0;
-                        ethertypeKey = 0;
-                        protocolKey = 0;
-                        portKey = 0;
                         break;
                     }
 
