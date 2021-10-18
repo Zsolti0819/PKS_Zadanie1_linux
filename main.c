@@ -696,9 +696,9 @@ char* get802_3ProtocolsFromTXT(const u_char* packet, FILE* _802_3Protocols, bool
 
 void printMenu() {
     printf("\n0 - Koniec\n");
-    printf("1 - Vypis vsetkych komunikacii\n");
+    printf("1 - Vypis vsetkych ramcov\n");
     printf("2 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
-    printf("3 - Filtrovanie podla protokolu\n");
+    printf("3 - Filtrovanie ramcov podla protokolu\n");
     printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
@@ -743,7 +743,7 @@ void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, 
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-21.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/eth-4.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -1019,7 +1019,7 @@ int main() {
                                             printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
                                         }
 
-                                            // Reply
+                                        // Reply
                                         else {
                                             printf("%s-%s, IP Adresa: %s, MAC Adresa: %s\n", ethertypeBuff, ARPBuff, getARPsrcIP(packet), getSrcMAC(packet));
                                             printf("Zdrojova IP: %s, Cielova IP: %s\n", getARPsrcIP(packet), getARPdstIP(packet));
