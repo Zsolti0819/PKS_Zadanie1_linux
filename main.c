@@ -5,6 +5,7 @@
 #include <pcap/pcap.h>
 
 bool debugMode = false;
+bool txtMode = false;
 
 struct IPv4Packet {
     char* srcIPAdress;
@@ -244,21 +245,8 @@ void printARPPacket(struct ARPPacket *node) {
     printf("OPCODE: %s\n", node->opCode);
 }
 
-void printMenu() {
-    printf("\n0 - Koniec\n");
-    printf("1 - Vypis vsetkych komunikacii\n");
-    printf("2 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
-    printf("3 - Filtrovanie podla protokolu\n");
-    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-}
-
-void seekToNextLine(void) {
-    int c;
-    while ((c = fgetc(stdin)) != EOF && c != '\n');
-}
-
 void printBasicInfo(int frame, int caplen, int len) {
-    printf("ramec %i\n", frame);
+    printf("ramec %d\n", frame);
     printf("dlzka ramca poskytnuta pcap API - %d B\n", caplen);
     len = len + 4;
     if (len < 64)len = 64;
@@ -349,13 +337,6 @@ char* getTCPFlag(const u_char* packet) {
     else if (packet[47] == 0x011 || packet[47] == 0x019)
         return "FIN";
     return "NULL";
-}
-
-char* getFrameType(const u_char* packet) {
-    if (packet[12] * 256 + packet[13] > 0x5DC)
-        return "Ethernet II";
-    else
-        return "802.3";
 }
 
 char* verify3WHS(struct TCPPacket *temp, struct TCPPacket *temp2, struct TCPPacket *temp3) {
@@ -492,6 +473,13 @@ char* connectARPPairs (struct ARPPacket *temp, struct ARPPacket *temp2) {
     return noARPPair;
 }
 
+char* getFrameType(const u_char* packet) {
+    if (packet[12] * 256 + packet[13] > 0x5DC)
+        return "Ethernet II";
+    else
+        return "802.3";
+}
+
 char* getEthertypesFromTXT(const u_char* packet, FILE* ethertypes) {
     int valueInTheFile = 0;
     int realValue = packet[12] * 256 + packet[13];
@@ -570,23 +558,23 @@ char* getTCPOrUDPPortsFromTXT(const u_char* packet, FILE* fileWithPorts) {
     return TCPPort;
 }
 
-char* getICMPMessagesFromTXT(const u_char* packet, FILE* ICMPPorts) {
+char* getICMPMessagesFromTXT(const u_char* packet, FILE* ICMPMessages) {
     int valueInTheFile = 0;
 
     int realValue = packet[34];
     int realValue2 = packet[54];
     int realValue3 = packet[70];
 
-    rewind(ICMPPorts);
+    rewind(ICMPMessages);
     char c;
     char ICMPPortBuff[50] = { 0 };
     int i = 0;
 
-    while ((c = getc(ICMPPorts)) != '-') {
+    while ((c = getc(ICMPMessages)) != '-') {
         if (c == '#') {
-            fscanf(ICMPPorts, "%x ", &valueInTheFile);
+            fscanf(ICMPMessages, "%x ", &valueInTheFile);
             if (realValue == valueInTheFile || realValue2 == valueInTheFile || realValue3 == valueInTheFile) {
-                while ((c = getc(ICMPPorts)) != '\n')
+                while ((c = getc(ICMPMessages)) != '\n')
                     if (c != '\t')
                         ICMPPortBuff[i++] = c;
                 break;
@@ -600,20 +588,20 @@ char* getICMPMessagesFromTXT(const u_char* packet, FILE* ICMPPorts) {
     return ICMPPort;
 }
 
-char* getARPOperationsFromTXT(const u_char* packet, FILE* ARPFile) {
+char* getARPOperationsFromTXT(const u_char* packet, FILE* ARPOperations) {
     int valueInTheFile = 0;
 
     int realValue = packet[20] * 256 + packet[21];
-    rewind(ARPFile);
+    rewind(ARPOperations);
     char c;
     char ARPBuff[50] = { 0 };
     int i = 0;
 
-    while ((c = getc(ARPFile)) != '-') {
+    while ((c = getc(ARPOperations)) != '-') {
         if (c == '#') {
-            fscanf(ARPFile, "%x ", &valueInTheFile);
+            fscanf(ARPOperations, "%x ", &valueInTheFile);
             if (realValue == valueInTheFile) {
-                while ((c = getc(ARPFile)) != '\n')
+                while ((c = getc(ARPOperations)) != '\n')
                     if (c != '\t')
                         ARPBuff[i++] = c;
                 break;
@@ -628,22 +616,22 @@ char* getARPOperationsFromTXT(const u_char* packet, FILE* ARPFile) {
 
 }
 
-char* get802_3SAPsFromTXT(const u_char* packet, FILE* _802_3File)
+char* get802_3SAPsFromTXT(const u_char* packet, FILE* _802_3SAPs)
 {
     int valueInTheFile = 0;
 
     int realValue1 = packet[14];
     int realValue2 = packet[15];
-    rewind(_802_3File);
+    rewind(_802_3SAPs);
     char c;
     char _802_3Buff[50] = { 0 };
     int i = 0;
 
-    while ((c = getc(_802_3File)) != '-') {
+    while ((c = getc(_802_3SAPs)) != '-') {
         if (c == '#') {
-            fscanf(_802_3File, "%x ", &valueInTheFile);
+            fscanf(_802_3SAPs, "%x ", &valueInTheFile);
             if (realValue1 == valueInTheFile && realValue2 == valueInTheFile) {
-                while ((c = getc(_802_3File)) != '\n')
+                while ((c = getc(_802_3SAPs)) != '\n')
                     if (c != '\t')
                         _802_3Buff[i++] = c;
                 break;
@@ -657,7 +645,7 @@ char* get802_3SAPsFromTXT(const u_char* packet, FILE* _802_3File)
     return _802_3Value;
 }
 
-char* get802_3ProtocolsFromTXT(const u_char* packet, FILE* _802_3File, bool isJustLLC)
+char* get802_3ProtocolsFromTXT(const u_char* packet, FILE* _802_3Protocols, bool isJustLLC)
 {
     int valueInTheFile = 0;
     int realValue1;
@@ -677,22 +665,22 @@ char* get802_3ProtocolsFromTXT(const u_char* packet, FILE* _802_3File, bool isJu
         realValue3 = packet[24];
     }
 
-    rewind(_802_3File);
+    rewind(_802_3Protocols);
     char c;
     char _802_3ProtocolBuff[50] = {0 };
     int i = 0;
 
-    while ((c = getc(_802_3File)) != '-') {
+    while ((c = getc(_802_3Protocols)) != '-') {
         if (c == '#') {
-            fscanf(_802_3File, "%x ", &valueInTheFile);
+            fscanf(_802_3Protocols, "%x ", &valueInTheFile);
             if (isJustLLC == false && realValue1 == valueInTheFile && realValue2 == valueInTheFile && realValue3 == 2) {
-                while ((c = getc(_802_3File)) != '\n')
+                while ((c = getc(_802_3Protocols)) != '\n')
                     if (c != '\t')
                         _802_3ProtocolBuff[i++] = c;
                 break;
             }
             else if (isJustLLC == true && realValue1 == valueInTheFile && realValue2 == valueInTheFile && realValue3 == 0) {
-                while ((c = getc(_802_3File)) != '\n')
+                while ((c = getc(_802_3Protocols)) != '\n')
                     if (c != '\t')
                         _802_3ProtocolBuff[i++] = c;
                 break;
@@ -706,16 +694,17 @@ char* get802_3ProtocolsFromTXT(const u_char* packet, FILE* _802_3File, bool isJu
     return _802_3Protocol;
 }
 
-void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, FILE **IPProtocols, FILE **TCPPorts, FILE **UDPPorts, FILE **ICMPPorts, FILE **ARPOperations) {
+void printMenu() {
+    printf("\n0 - Koniec\n");
+    printf("1 - Vypis vsetkych komunikacii\n");
+    printf("2 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
+    printf("3 - Filtrovanie podla protokolu\n");
+    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+}
 
-    if (((*_802_3SAPs) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3SAPs.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3SAPs.txt suboru.\n");
-    if (((*_802_3Protocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3Protocols.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3Protocols.txt suboru.\n");
-    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
-    if (((*IPProtocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/IPProtocols.txt", "r")) == NULL) printf("Chyba pri otvoreni IPProtocols.txt suboru.\n");
-    if (((*TCPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/TCPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni TCPPorts.txt suboru.\n");
-    if (((*UDPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/UDPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni UDPPorts.txt suboru.\n");
-    if (((*ICMPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ICMPMessages.txt", "r")) == NULL) printf("Chyba pri otvoreni ICMPMessages.txt suboru.\n");
-    if (((*ARPOperations) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ARPOperations.txt", "r")) == NULL) printf("Chyba pri otvoreni ARPOperations.txt suboru.\n");
+void seekToNextLine(void) {
+    int c;
+    while ((c = fgetc(stdin)) != EOF && c != '\n');
 }
 
 int differenceSetOperation(int* excludeFrames, int excludeSize, int x, const int* bufferArraySet, int* finalSet) {
@@ -740,9 +729,21 @@ int differenceSetOperation(int* excludeFrames, int excludeSize, int x, const int
     return k;
 }
 
+void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, FILE **IPProtocols, FILE **TCPPorts, FILE **UDPPorts, FILE **ICMPPorts, FILE **ARPOperations) {
+
+    if (((*_802_3SAPs) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3SAPs.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3SAPs.txt suboru.\n");
+    if (((*_802_3Protocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3Protocols.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3Protocols.txt suboru.\n");
+    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
+    if (((*IPProtocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/IPProtocols.txt", "r")) == NULL) printf("Chyba pri otvoreni IPProtocols.txt suboru.\n");
+    if (((*TCPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/TCPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni TCPPorts.txt suboru.\n");
+    if (((*UDPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/UDPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni UDPPorts.txt suboru.\n");
+    if (((*ICMPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ICMPMessages.txt", "r")) == NULL) printf("Chyba pri otvoreni ICMPMessages.txt suboru.\n");
+    if (((*ARPOperations) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ARPOperations.txt", "r")) == NULL) printf("Chyba pri otvoreni ARPOperations.txt suboru.\n");
+}
+
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-21.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -766,7 +767,8 @@ int main() {
     int choice;
 
     do {
-        printMenu();
+        if (txtMode == false)
+            printMenu();
         scanf("%d", &choice);
         seekToNextLine();
         switch (choice) {
@@ -889,6 +891,8 @@ int main() {
                 pcap_close(pcap_file);
                 deleteIPv4PacketList(&IPv4Head);
 
+                if (txtMode == true)
+                    exit(0);
                 break;
             }
 
@@ -977,7 +981,7 @@ int main() {
                                 stringArray[buffer++] = token;
                             int tempRequestFN = atoi(stringArray[0]);
                             int tempReplyFN = atoi(stringArray[1]);
-                            if (debugMode)
+                            if (debugMode == true)
                                 printf("%d -> %d\n", tempRequestFN, tempReplyFN);
 
                             if (tempRequestFN == 0 || tempReplyFN == 0)
@@ -1034,7 +1038,7 @@ int main() {
                                 pcap_close(pcap_file);
                             }
                         }
-                        if (debugMode)
+                        if (debugMode == true)
                             printf("exclude: %d\n", exclude);
 
                         if (exclude == 0) {
@@ -1065,7 +1069,7 @@ int main() {
                         int kk = differenceSetOperation(excludeFrames, exclude, buffer, bufferArraySet, finalSet);
                         int finalSetSize = kk;
 
-                        if (debugMode)
+                        if (debugMode == true)
                             printf("finalSetSize: %d\n", finalSetSize);
 
                         // ARP Requests without Replies
@@ -1157,7 +1161,7 @@ int main() {
                         break;
                     }
 
-                        // UDP
+                    // UDP
                     else if (strcasecmp("TFTP", choice2) == 0) {
 
                         struct UDPPacket *temp = UDPhead;
@@ -1224,7 +1228,7 @@ int main() {
                         break;
                     }
 
-                        // ICMP
+                    // ICMP
                     else if (strcasecmp("ICMP", choice2) == 0) {
 
                         if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
@@ -1259,7 +1263,7 @@ int main() {
                         break;
                     }
 
-                        // TCP
+                    // TCP
                     else {
                         struct TCPPacket *temp = TCPhead;
                         struct TCPPacket *temp2 = temp;
@@ -1288,7 +1292,7 @@ int main() {
                             int tempFrameNumber = atoi(stringArray[0]);
                             char* tempPort = stringArray[1];
 
-                            if (debugMode) {
+                            if (debugMode == true) {
                                 printf("~~~~~~~~~~\n");
                                 printf("[New loop]\n");
                                 printf("start: %d Port: %s\n", tempFrameNumber, tempPort);
@@ -1297,7 +1301,7 @@ int main() {
                             // 3WHS Success, looking for complete com
                             if (strcasecmp(tempPort, "0") && completeComFullfilled == false) {
                                 char* potentionalEnd = verifyTermination(temp4, temp5, tempFrameNumber, tempPort);
-                                if (debugMode) {
+                                if (debugMode == true) {
                                     printf("end: %s\n", potentionalEnd);
                                     printf("~~~~~~~~~~\n");
                                 }
@@ -1307,7 +1311,7 @@ int main() {
                                 if (strcasecmp(potentionalEnd, "0")) {
                                     completeComFullfilled = true;
                                     firstCompleteComPort = tempPort;
-                                    if (debugMode) {
+                                    if (debugMode == true) {
                                         printf("[4WHS Success, first complete com]\n");
                                         printf("1st COMPLETE com [ %s ] = start: %d\tend: %s\n", tempPort, tempFrameNumber, potentionalEnd);
                                     }
@@ -1319,7 +1323,7 @@ int main() {
                                 else if (strcasecmp(potentionalEnd, "0") == 0 && incompleteComFullfilled == false) {
                                     firstIncompleteComPort = tempPort;
                                     incompleteComFullfilled = true;
-                                    if (debugMode) {
+                                    if (debugMode == true) {
                                         printf("[4WHS Fail, incomplete com fullfilled, first loop]\n");
                                         printf("1st INCOMPLETE com [ %s ] = start: %d\tend: %s\n", tempPort, tempFrameNumber, potentionalEnd);
                                     }
@@ -1331,7 +1335,7 @@ int main() {
                             else if (strcasecmp(tempPort, "0") && completeComFullfilled == true) {
 
                                 char* potentionalEnd = verifyTermination(temp4, temp5, tempFrameNumber, tempPort);
-                                if (debugMode) {
+                                if (debugMode == true) {
                                     printf("\n[3WHS Success, complete com fullfilled]\n");
                                     printf("end %s\n", potentionalEnd);
                                     printf("~~~~~~~~~~\n");
@@ -1340,7 +1344,7 @@ int main() {
                                 if (strcasecmp(potentionalEnd, "0") == 0) {
                                     incompleteComFullfilled = true;
                                     firstIncompleteComPort = tempPort;
-                                    if (debugMode) {
+                                    if (debugMode == true) {
                                         printf("[4WHS Fail, incomplete com fullfilled]\n");
                                         printf("1st INCOMPLETE com [ %s ] = start: %d\tend: %s\n", tempPort, tempFrameNumber, potentionalEnd);
                                     }
@@ -1349,7 +1353,7 @@ int main() {
                             }
                                 // 3WHS Fail
                             else {
-                                if (debugMode)
+                                if (debugMode == true)
                                     printf("[3WHS Fail, no complete com found]\n");
                                 break;
                             }
@@ -1485,6 +1489,8 @@ int main() {
                     printf("Bad luck\n");
                     break;
                 }
+                if (txtMode == true)
+                    exit(0);
             }
 
             case 3: {
@@ -1649,13 +1655,14 @@ int main() {
                 printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
                 frames = 0;
                 pcap_close(pcap_file);
-
+                if (txtMode == true)
+                    exit(0);
                 break;
             }
 
-
-
             default:
+                if (txtMode == true)
+                    exit(0);
                 break;
         }
     } while (choice != 0);
