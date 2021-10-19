@@ -136,6 +136,7 @@ void printTCPPacket(struct TCPPacket *node) {
     printf("FRAME: %d\n", node->frameNumber);
     printf("SRC: %s\n", node->srcPort);
     printf("DST: %s\n", node->dstPort);
+    printf("~~~~~~~~~~\n");
 }
 
 struct UDPPacket {
@@ -243,6 +244,8 @@ void printARPPacket(struct ARPPacket *node) {
     printf("SRC MAC: %s\n", node->srcMACAdress);
     printf("DST MAC: %s\n", node->dstMACAdress);
     printf("OPCODE: %s\n", node->opCode);
+    printf("~~~~~~~~~~\n");
+
 }
 
 void printBasicInfo(int frame, int caplen, int len) {
@@ -446,7 +449,7 @@ char* connectARPPairs (struct ARPPacket *temp, struct ARPPacket *temp2) {
         if (strcasecmp(temp -> opCode, "Request") == 0 && temp->isMarked == false) {
             while (temp2 != NULL) {
                 if (strcasecmp(temp2 -> opCode, "Reply") == 0  && temp2->isMarked == false && temp->frameNumber < temp2->frameNumber) {
-                    if (strcmp(temp->srcMACAdress, temp2->dstMACAdress) == 0) {
+                    if (strcasecmp(temp->srcMACAdress, temp2->dstMACAdress) == 0) {
                         temp->isMarked = true;
                         temp2->isMarked = true;
 
@@ -743,7 +746,7 @@ void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, 
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/eth-4.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -1293,7 +1296,6 @@ int main() {
                             char* tempPort = stringArray[1];
 
                             if (debugMode == true) {
-                                printf("~~~~~~~~~~\n");
                                 printf("[New loop]\n");
                                 printf("start: %d Port: %s\n", tempFrameNumber, tempPort);
                             }
@@ -1617,8 +1619,8 @@ int main() {
                             // AA
                             if (strcasecmp(_802_3Buff, "SNAP") == 0) {
                                 char* _802_3ProtocolBuff = get802_3ProtocolsFromTXT(packet, _802_3Protocols, false);
-                                if (strcmp(_802_3ProtocolBuff, "STP") == 0) {
-                                    if (strcmp(_802_3ProtocolBuff, choice2) == 0) {
+                                if (strcasecmp(_802_3ProtocolBuff, "STP") == 0) {
+                                    if (strcasecmp(_802_3ProtocolBuff, choice2) == 0) {
                                         printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                                         printf("%s ", frameTypeBuff);
                                         printf("%s + LLC\n", _802_3Buff);
@@ -1635,8 +1637,8 @@ int main() {
                             // Just LLC
                             else if (strcasecmp(_802_3Buff, "BPDU (Bridge PDU / 802.1 Spanning Tree)") == 0) {
                                 char* _802_3ProtocolBuff = get802_3ProtocolsFromTXT(packet, _802_3Protocols, true);
-                                if (strcmp(_802_3ProtocolBuff, "STP") == 0) {
-                                    if (strcmp(_802_3ProtocolBuff, choice2) == 0){
+                                if (strcasecmp(_802_3ProtocolBuff, "STP") == 0) {
+                                    if (strcasecmp(_802_3ProtocolBuff, choice2) == 0){
                                         printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
                                         printf("%s ", frameTypeBuff);
                                         printf("LLC\n");
