@@ -736,7 +736,7 @@ void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, 
 
     if (((*_802_3SAPs) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3SAPs.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3SAPs.txt suboru.\n");
     if (((*_802_3Protocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/802_3Protocols.txt", "r")) == NULL) printf("Chyba pri otvoreni 802_3Protocols.txt suboru.\n");
-    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni ethertypes.txt suboru.\n");
+    if (((*ethertypes) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/Ethertypes.txt", "r")) == NULL) printf("Chyba pri otvoreni Ethertypes.txt suboru.\n");
     if (((*IPProtocols) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/IPProtocols.txt", "r")) == NULL) printf("Chyba pri otvoreni IPProtocols.txt suboru.\n");
     if (((*TCPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/TCPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni TCPPorts.txt suboru.\n");
     if (((*UDPPorts) = fopen("/home/zsolti/CLionProjects/PKS_Zadanie1_linux/txt/UDPPorts.txt", "r")) == NULL) printf("Chyba pri otvoreni UDPPorts.txt suboru.\n");
