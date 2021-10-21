@@ -746,7 +746,7 @@ void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, 
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-27.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-15.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -936,7 +936,7 @@ int main() {
                                             insertTCPPacketToList(&TCPhead, getSrcPort(packet), getDstPort(packet), getTCPFlag(packet), frames);
                                     }
 
-                                        // UDP
+                                    // UDP
                                     else if (strcasecmp(protocolBuff, "UDP") == 0) {
                                         char* portBuff = getTCPOrUDPPortsFromTXT(packet, UDPPorts);
                                         if (strcasecmp(portBuff, choice2) == 0 && findUDPPacketInList(UDPhead, frames) == false)
@@ -944,7 +944,7 @@ int main() {
                                     }
                                 }
 
-                                    // ARP
+                                // ARP
                                 else if (strcasecmp(ethertypeBuff, "ARP") == 0) {
                                     if (strcasecmp(ethertypeBuff, choice2) == 0 && findARPPacketInList(ARPhead, frames) == false)
                                         insertARPPacketToList(&ARPhead, frames, getARPsrcIP(packet), getARPdstIP(packet),
@@ -957,7 +957,7 @@ int main() {
                         pcap_close(pcap_file);
                     }
 
-                    // ARP [ 100 % ]
+                    // ARP
                     if (strcasecmp("ARP", choice2) == 0) {
 
                         struct ARPPacket *temp = ARPhead;
@@ -1161,6 +1161,8 @@ int main() {
                         frames = 0;
                         pcap_close(pcap_file);
                         deleteARPPacketList(&ARPhead);
+                        if (txtMode == true)
+                            exit(0);
                         break;
                     }
 
@@ -1228,6 +1230,8 @@ int main() {
                             temp = temp -> next;
                         }
                         deleteUDPPacketList(&UDPhead);
+                        if (txtMode == true)
+                            exit(0);
                         break;
                     }
 
@@ -1263,6 +1267,8 @@ int main() {
                         }
                         pcap_close(pcap_file);
                         frames = 0;
+                        if (txtMode == true)
+                            exit(0);
                         break;
                     }
 
@@ -1483,16 +1489,18 @@ int main() {
                         pcap_close(pcap_file);
                         deleteTCPPacketList(&TCPhead);
                         frames = 0;
+                        if (txtMode == true)
+                            exit(0);
                         break;
                     }
                 }
 
                 else {
                     printf("Bad luck\n");
+                    if (txtMode == true)
+                        exit(0);
                     break;
                 }
-                if (txtMode == true)
-                    exit(0);
             }
 
             case 3: {
