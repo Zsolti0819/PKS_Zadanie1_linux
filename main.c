@@ -493,7 +493,7 @@ char* getEthertypesFromTXT(const u_char* packet, FILE* ethertypes) {
 
     while ((c = getc(ethertypes)) != '-') {
         if (c == '#') {
-            fscanf(ethertypes, "%x", &valueInTheFile);
+            fscanf(ethertypes, "%x ", &valueInTheFile);
             if (realValue == valueInTheFile) {
                 while ((c = getc(ethertypes)) != '\n')
                     if (c != '\t')
@@ -670,7 +670,7 @@ char* get802_3ProtocolsFromTXT(const u_char* packet, FILE* _802_3Protocols, bool
 
     rewind(_802_3Protocols);
     char c;
-    char _802_3ProtocolBuff[50] = {0 };
+    char _802_3ProtocolBuff[50] = { 0 };
     int i = 0;
 
     while ((c = getc(_802_3Protocols)) != '-') {
@@ -702,6 +702,7 @@ void printMenu() {
     printf("1 - Vypis vsetkych ramcov\n");
     printf("2 - Vypis komunikacii podla protokolu (viacere moznosti)\n");
     printf("3 - Filtrovanie ramcov podla protokolu\n");
+    printf("4 - Doimplementacia\n");
     printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
 }
 
@@ -746,7 +747,7 @@ void openTxtFiles(FILE **_802_3SAPs, FILE **_802_3Protocols, FILE **ethertypes, 
 
 int main() {
 
-    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-15.pcap" }; // sem vlozit subor
+    char* file_name = { "/home/zsolti/CLionProjects/PKS_Zadanie1_linux/vzorky_pcap_na_analyzu/trace-26.pcap" }; // sem vlozit subor
     char pcap_file_error[PCAP_ERRBUF_SIZE];
     pcap_t* pcap_file;
 
@@ -1663,6 +1664,43 @@ int main() {
                     }
                 }
                 printf("Tento subor obsahoval %d protokolov typu %s.\n", count, choice2);
+                frames = 0;
+                pcap_close(pcap_file);
+                if (txtMode == true)
+                    exit(0);
+                break;
+            }
+
+            case 4:
+            {
+                if ((pcap_file = pcap_open_offline(file_name, pcap_file_error)) == NULL) {
+                    printf("Chyba pri otvoreni PCAP suboru.");
+                    exit(0);
+                }
+
+                int count = 0;
+
+                while ((pcap_next_ex(pcap_file, &pcapHeader, &packet)) >= 0) {
+                    frames++;
+                    char *frameTypeBuff = getFrameType(packet);
+                    if (strcasecmp(frameTypeBuff, "Ethernet II") == 0) {
+                        char* ethertypeBuff = getEthertypesFromTXT(packet, ethertypes);
+                        if (strcasecmp(ethertypeBuff, "LLDP") == 0) {
+                            printBasicInfo(frames, pcapHeader->caplen, pcapHeader->len);
+                            printf("%s\n", frameTypeBuff);
+                            printf("%s\n", ethertypeBuff);
+                            printf("Zdrojova MAC adresa: %s\n", getSrcMAC(packet));
+                            printf("Cielova MAC adresa: %s\n", getDstMAC(packet));
+                            printHexadecimal(pcapHeader -> len, packet);
+                            printf("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+                            count++;
+
+                        }
+                    }
+                }
+
+
+                printf("Tento subor obsahoval %d ramcov typu LLDP.\n", count);
                 frames = 0;
                 pcap_close(pcap_file);
                 if (txtMode == true)
