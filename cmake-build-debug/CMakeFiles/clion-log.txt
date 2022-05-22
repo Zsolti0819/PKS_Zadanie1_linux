@@ -1,4 +1,20 @@
-/snap/clion/169/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/usr/bin/cc -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/zsolti/CLionProjects/PKS_Zadanie1_linux
+"C:\Program Files\JetBrains\CLion 2020.3\bin\cmake\win\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - MinGW Makefiles" -S C:\Users\destr\CLionProjects\PKS_Zadanie1_linux -B C:\Users\destr\CLionProjects\PKS_Zadanie1_linux\cmake-build-debug
+-- The C compiler identification is GNU 6.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/MinGW/bin/gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Could NOT find PCAP (missing: PCAP_LIBRARY PCAP_INCLUDE_DIR) 
+-- Performing Test PCAP_LINKS_SOLO
+-- Performing Test PCAP_LINKS_SOLO - Success
+-- Looking for pcap_get_pfring_id
+-- Looking for pcap_get_pfring_id - not found
 -- Configuring done
+CMake Error: The following variables are used in this project, but they are set to NOTFOUND.
+Please set them or make sure they are set and tested correctly in the CMake files:
+PCAP_LIBRARY (ADVANCED)
+    linked by target "PKS_Zadanie1_linux" in directory C:/Users/destr/CLionProjects/PKS_Zadanie1_linux
+
 -- Generating done
--- Build files have been written to: /home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug
+CMake Generate step failed.  Build files cannot be regenerated correctly.

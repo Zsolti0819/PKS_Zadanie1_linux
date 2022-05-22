@@ -1,3 +1,3 @@
-/home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/PKS_Zadanie1_linux.dir
+C:/Users/destr/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/PKS_Zadanie1_linux.dir
+C:/Users/destr/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/destr/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/rebuild_cache.dir

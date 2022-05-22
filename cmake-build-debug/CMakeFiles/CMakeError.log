@@ -1,19 +1,22 @@
 Determining if the function pcap_get_pfring_id exists failed with the following output:
-Change Dir: /home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/CMakeTmp
+Change Dir: C:/Users/destr/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/CMakeTmp
 
-Run Build Command(s):/usr/bin/make -f Makefile cmTC_fd81b/fast && /usr/bin/make  -f CMakeFiles/cmTC_fd81b.dir/build.make CMakeFiles/cmTC_fd81b.dir/build
-make[1]: Entering directory '/home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/CMakeTmp'
-Building C object CMakeFiles/cmTC_fd81b.dir/CheckFunctionExists.c.o
-/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pcap_get_pfring_id -std=gnu99 -o CMakeFiles/cmTC_fd81b.dir/CheckFunctionExists.c.o -c /snap/clion/164/bin/cmake/linux/share/cmake-3.20/Modules/CheckFunctionExists.c
-Linking C executable cmTC_fd81b
-/snap/clion/164/bin/cmake/linux/bin/cmake -E cmake_link_script CMakeFiles/cmTC_fd81b.dir/link.txt --verbose=1
-/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pcap_get_pfring_id CMakeFiles/cmTC_fd81b.dir/CheckFunctionExists.c.o -o cmTC_fd81b  /usr/lib/x86_64-linux-gnu/libpcap.so 
-/usr/bin/ld: CMakeFiles/cmTC_fd81b.dir/CheckFunctionExists.c.o: in function `main':
-CheckFunctionExists.c:(.text+0x14): undefined reference to `pcap_get_pfring_id'
-collect2: error: ld returned 1 exit status
-make[1]: *** [CMakeFiles/cmTC_fd81b.dir/build.make:100: cmTC_fd81b] Error 1
-make[1]: Leaving directory '/home/zsolti/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/CMakeTmp'
-make: *** [Makefile:127: cmTC_fd81b/fast] Error 2
+Run Build Command(s):C:/MinGW/bin/mingw32-make.exe -f Makefile cmTC_0f66c/fast && C:/MinGW/bin/mingw32-make.exe  -f CMakeFiles\cmTC_0f66c.dir\build.make CMakeFiles/cmTC_0f66c.dir/build
+mingw32-make.exe[1]: Entering directory 'C:/Users/destr/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_0f66c.dir/CheckFunctionExists.c.obj
+C:\MinGW\bin\gcc.exe   -DCHECK_FUNCTION_EXISTS=pcap_get_pfring_id -std=gnu99 -o CMakeFiles\cmTC_0f66c.dir\CheckFunctionExists.c.obj -c "C:\Program Files\JetBrains\CLion 2020.3\bin\cmake\win\share\cmake-3.22\Modules\CheckFunctionExists.c"
+Linking C executable cmTC_0f66c.exe
+"C:\Program Files\JetBrains\CLion 2020.3\bin\cmake\win\bin\cmake.exe" -E cmake_link_script CMakeFiles\cmTC_0f66c.dir\link.txt --verbose=1
+"C:\Program Files\JetBrains\CLion 2020.3\bin\cmake\win\bin\cmake.exe" -E rm -f CMakeFiles\cmTC_0f66c.dir/objects.a
+C:\MinGW\bin\ar.exe qc CMakeFiles\cmTC_0f66c.dir/objects.a @CMakeFiles\cmTC_0f66c.dir\objects1.rsp
+C:\MinGW\bin\gcc.exe  -DCHECK_FUNCTION_EXISTS=pcap_get_pfring_id -Wl,--whole-archive CMakeFiles\cmTC_0f66c.dir/objects.a -Wl,--no-whole-archive -o cmTC_0f66c.exe -Wl,--out-implib,libcmTC_0f66c.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\cmTC_0f66c.dir\linklibs.rsp
+CMakeFiles\cmTC_0f66c.dir/objects.a(CheckFunctionExists.c.obj):CheckFunctionExists.c:(.text+0xc): undefined reference to `pcap_get_pfring_id'
+collect2.exe: error: ld returned 1 exit status
+CMakeFiles\cmTC_0f66c.dir\build.make:99: recipe for target 'cmTC_0f66c.exe' failed
+mingw32-make.exe[1]: *** [cmTC_0f66c.exe] Error 1
+mingw32-make.exe[1]: Leaving directory 'C:/Users/destr/CLionProjects/PKS_Zadanie1_linux/cmake-build-debug/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_0f66c/fast' failed
+mingw32-make.exe: *** [cmTC_0f66c/fast] Error 2
 
 
 
